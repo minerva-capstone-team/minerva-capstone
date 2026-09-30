@@ -9,6 +9,7 @@ import { cn } from "@/lib/format";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Logo } from "@/components/layout/Logo";
 import { AuthForm } from "@/components/account/AuthForm";
+import { InstallAppButton, useRegisterAdminSw } from "@/components/admin/AdminPwa";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/admin", label: "Resumen", icon: "home" },
@@ -55,6 +56,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | undefined>(undefined);
   const [menuOpen, setMenuOpen] = useState(false);
+  useRegisterAdminSw();
 
   useEffect(() => {
     if (!session) {
@@ -129,7 +131,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
         </nav>
-        <div className="space-y-1 border-t border-line pt-4">
+        <div className="space-y-1 border-t border-line pt-4 pb-[env(safe-area-inset-bottom)]">
+          <InstallAppButton className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper" />
           <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper">
             <Icon name="external" size={18} /> Ver tienda
           </Link>
@@ -142,14 +145,34 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {menuOpen && <div className="fixed inset-0 z-30 bg-ink/30 lg:hidden" onClick={() => setMenuOpen(false)} aria-hidden />}
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-paper/85 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-paper/85 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur lg:hidden">
           <button type="button" className="grid size-11 place-items-center rounded-full hover:bg-ink/5" onClick={() => setMenuOpen(true)} aria-label="Abrir menú de administración">
             <Icon name="menu" />
           </button>
           <span className="font-semibold">Minerva Admin</span>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 lg:py-12">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 lg:py-12">{children}</main>
       </div>
+
+      <nav
+        aria-label="Secciones"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        <ul className="grid grid-cols-4">
+          {NAV.map((n) => (
+            <li key={n.href}>
+              <Link
+                href={n.href}
+                aria-current={isActive(n.href) ? "page" : undefined}
+                className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-ink-soft aria-[current=page]:text-ink"
+              >
+                <Icon name={n.icon} size={22} />
+                {n.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
 }
