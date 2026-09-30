@@ -21,6 +21,7 @@ const columns = [
     links: [
       { label: "Cómo personalizar", href: "/#personaliza" },
       { label: "Preguntas frecuentes", href: "/#faq" },
+      { label: "Seguir mi pedido", href: "/seguimiento" },
       { label: "Mi cuenta y pedidos", href: "/cuenta" },
       { label: "Nosotros", href: "/#nosotros" },
     ],

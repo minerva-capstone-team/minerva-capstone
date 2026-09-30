@@ -18,6 +18,7 @@ interface OrderRow {
   delivery_status: keyof typeof orderStatusLabel.delivery;
   payment_method: string;
   notes: string | null;
+  tracking_code: string | null;
   created_at: string;
   customer: { first_name: string; last_name: string; email: string; phone: string; address: string; comuna: string; region: string } | null;
   order_items: {
@@ -74,7 +75,7 @@ export default function AdminOrders() {
     void load();
   }, [load]);
 
-  const update = async (o: OrderRow, values: Partial<Pick<OrderRow, "status" | "payment_status" | "delivery_status">>) => {
+  const update = async (o: OrderRow, values: Partial<Pick<OrderRow, "status" | "payment_status" | "delivery_status" | "tracking_code">>) => {
     setOrders((list) => list?.map((x) => (x.id === o.id ? { ...x, ...values } : x)) ?? null);
     const { error } = await adminDb().from("orders").update(values).eq("id", o.id);
     if (error) {
@@ -195,6 +196,26 @@ export default function AdminOrders() {
                           </select>
                         </div>
                       ))}
+                      <div>
+                        <label htmlFor={`${o.id}-tracking`} className="label">
+                          Nº de seguimiento Paket
+                        </label>
+                        <input
+                          id={`${o.id}-tracking`}
+                          key={o.tracking_code ?? ""}
+                          className="field"
+                          maxLength={60}
+                          autoComplete="off"
+                          placeholder="Pega aquí el código de Paket"
+                          defaultValue={o.tracking_code ?? ""}
+                          onBlur={(e) => {
+                            const code = e.target.value.trim() || null;
+                            if (code !== o.tracking_code) void update(o, { tracking_code: code });
+                          }}
+                          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        />
+                        <p className="mt-1 text-xs text-ink-soft">Se muestra al cliente en /seguimiento cuando el despacho está en “Enviado”.</p>
+                      </div>
                     </div>
                   </div>
                 )}

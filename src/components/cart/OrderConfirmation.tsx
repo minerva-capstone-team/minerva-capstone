@@ -80,6 +80,9 @@ export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
         <Link href="/productos" className="btn btn-ghost">
           Seguir comprando
         </Link>
+        <Link href={`/seguimiento?pedido=${encodeURIComponent(order.order_number)}`} className="btn btn-ghost">
+          Seguir mi pedido
+        </Link>
         <Link href="/cuenta" className="btn btn-ghost">
           Ver mis pedidos
         </Link>

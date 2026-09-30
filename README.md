@@ -17,6 +17,8 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. En **SQL Editor** ejecuta, en orden:
    - `supabase/migrations/0001_init.sql` — tablas, RLS, función `create_order`, buckets de Storage.
+   - `supabase/migrations/0002_order_emails.sql` — confirmación de pedido por email.
+   - `supabase/migrations/0003_order_tracking.sql` — código de Paket y función `track_order` para la página `/seguimiento`.
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
    ```env
