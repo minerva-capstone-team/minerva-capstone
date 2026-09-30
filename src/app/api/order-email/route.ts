@@ -20,10 +20,18 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: "lookup failed" }, { status: 500 });
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const errors = await sendOrderEmails(data as OrderEmailData);
+  const order = data as OrderEmailData;
+  const { attempted, ids, errors } = await sendOrderEmails(order);
+  if (!attempted) {
+    console.warn(
+      `[order-email] ${order.order_number}: no se envió nada. Sin dominio propio solo se avisa a la tienda, y ORDER_NOTIFY_EMAIL está vacío en este despliegue.`,
+    );
+    return NextResponse.json({ sent: false, reason: "no recipients" });
+  }
   if (errors.length) {
-    console.error("Resend:", errors);
+    console.error(`[order-email] ${order.order_number} Resend:`, errors);
     return NextResponse.json({ error: "send failed" }, { status: 502 });
   }
+  console.info(`[order-email] ${order.order_number}: ${ids.length} email(s) enviados a Resend`, ids);
   return NextResponse.json({ sent: true });
 }
