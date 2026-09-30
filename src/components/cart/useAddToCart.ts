@@ -10,7 +10,9 @@ export function useAddToCart() {
   return (product: Product, opts: { variant?: ProductVariant | null; quantity?: number; customization?: Customization | null } = {}) => {
     const variant = opts.variant ?? null;
     const inCart = items.filter((i) => i.productId === product.id).reduce((n, i) => n + i.quantity, 0);
-    const available = product.stock - inCart;
+    const variantInCart = variant ? items.filter((i) => i.variantId === variant.id).reduce((n, i) => n + i.quantity, 0) : 0;
+    const variantAvailable = variant && variant.stock !== null ? variant.stock - variantInCart : Infinity;
+    const available = Math.min(product.stock - inCart, variantAvailable);
     if (available <= 0) {
       toast({ title: "Sin stock disponible", description: "Ya tienes en el carrito todas las unidades disponibles.", tone: "error" });
       return false;
@@ -22,7 +24,7 @@ export function useAddToCart() {
       name: product.name,
       unitPrice: product.price + (variant?.price_delta ?? 0),
       quantity,
-      maxQuantity: product.stock,
+      maxQuantity: variant && variant.stock !== null ? Math.min(product.stock, variant.stock) : product.stock,
       variantId: variant?.id ?? null,
       variantName: variant?.name ?? null,
       image: product.images[0]?.image_url ?? null,

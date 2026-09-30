@@ -9,6 +9,14 @@ export interface TrackedOrder {
   payment_status: PaymentStatus;
   delivery_status: DeliveryStatus;
   tracking_code: string | null;
+  total: number;
+  subtotal: number;
+  discount: number;
+  shipping_cost: number;
+  shipping_pending: boolean;
+  document_type: "boleta" | "factura";
+  document_number: string | null;
+  document_url: string | null;
   items: { name: string; variant: string | null; quantity: number }[];
 }
 

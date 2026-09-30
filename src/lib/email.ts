@@ -2,6 +2,7 @@ import "server-only";
 import { Resend } from "resend";
 import { formatCLP } from "./format";
 import { site } from "./site";
+import { trackingUrl, type OrderNotice } from "./order-notify";
 
 const apiKey = process.env.RESEND_API_KEY ?? "";
 /** Remitente. Con `onboarding@resend.dev` Resend solo entrega a tu propio correo: verifica un dominio y cámbialo para enviar a clientes. */
@@ -12,10 +13,19 @@ const sandboxSender = /@resend\.dev>?\s*$/i.test(from);
 const notifyTo = process.env.ORDER_NOTIFY_EMAIL ?? "";
 
 export const isEmailConfigured = Boolean(apiKey);
+/** true cuando hay un dominio verificado y se puede escribir a los clientes. */
+export const canEmailCustomers = isEmailConfigured && !sandboxSender;
 
 export interface OrderEmailData {
   order_number: string;
   total: number;
+  subtotal: number;
+  discount: number;
+  shipping_cost: number;
+  shipping_pending: boolean;
+  coupon_code: string | null;
+  document_type: "boleta" | "factura";
+  billing: { rut: string; razon_social: string; giro: string; direccion: string } | null;
   payment_method: string;
   notes: string | null;
   customer: { first_name: string; last_name: string; email: string; phone: string; address: string; comuna: string; region: string };
@@ -34,8 +44,15 @@ function itemsTable(o: OrderEmailData) {
 </tr>`,
     )
     .join("");
+  const line = (label: string, value: string, extra = "") =>
+    `<tr><td style="padding:4px 0;color:#555${extra}">${label}</td><td style="padding:4px 0;text-align:right;white-space:nowrap${extra}">${value}</td></tr>`;
+  const shipping = o.shipping_pending ? "Se coordina por WhatsApp" : o.shipping_cost > 0 ? formatCLP(o.shipping_cost) : "Gratis";
   return `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px">${rows}
-<tr><td style="padding:12px 0;font-weight:bold">Total productos</td><td style="padding:12px 0;text-align:right;font-weight:bold">${formatCLP(o.total)}</td></tr></table>`;
+<tr><td colspan="2" style="padding-top:8px"></td></tr>
+${line("Subtotal", formatCLP(o.subtotal))}
+${o.discount > 0 ? line(`Descuento${o.coupon_code ? ` (${esc(o.coupon_code)})` : ""}`, `−${formatCLP(o.discount)}`, ";color:#1c6b51") : ""}
+${line("Envío", shipping)}
+<tr><td style="padding:12px 0;font-weight:bold;border-top:1px solid #eee">Total${o.shipping_pending ? " (sin envío)" : ""}</td><td style="padding:12px 0;text-align:right;font-weight:bold;border-top:1px solid #eee">${formatCLP(o.total)}</td></tr></table>`;
 }
 
 const wrap = (body: string) =>
@@ -58,8 +75,29 @@ function storeHtml(o: OrderEmailData) {
   return wrap(`<h1 style="font-size:20px;margin:0 0 12px">Nuevo pedido ${esc(o.order_number)}</h1>
 <p style="margin:0 0 16px">${esc(c.first_name)} ${esc(c.last_name)} · ${esc(c.email)} · ${esc(c.phone)}<br>${esc(c.address)}, ${esc(c.comuna)}, ${esc(c.region)}<br>Pago: ${esc(o.payment_method)}</p>
 ${o.notes ? `<p style="margin:0 0 16px;padding:12px;background:#f6f6f6;border-radius:8px">${esc(o.notes)}</p>` : ""}
+${
+  o.document_type === "factura" && o.billing
+    ? `<p style="margin:0 0 16px;padding:12px;background:#fff6e5;border-radius:8px"><strong>Pide FACTURA</strong><br>${esc(o.billing.razon_social)} · RUT ${esc(o.billing.rut)}<br>Giro: ${esc(o.billing.giro)}<br>${esc(o.billing.direccion)}</p>`
+    : `<p style="margin:0 0 16px;color:#555">Documento: boleta</p>`
+}
 ${itemsTable(o)}
 <p style="margin-top:20px"><a href="${site.url}/admin/pedidos">Ver en el panel</a></p>`);
+}
+
+function noticeHtml(n: OrderNotice, orderNumber: string, firstName: string) {
+  return wrap(`<h1 style="font-size:22px;margin:0 0 8px">${esc(n.headline)}</h1>
+<p style="margin:0 0 16px">Hola ${esc(firstName)},</p>
+<p style="margin:0 0 20px">${esc(n.body)}</p>
+${n.code ? `<p style="margin:0 0 20px;padding:14px 16px;background:#f6f6f6;border-radius:8px;font-family:monospace;font-size:18px;font-weight:bold">${esc(n.code)}</p>` : ""}
+<p style="margin:24px 0"><a href="${trackingUrl(orderNumber)}" style="background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">Ver estado de mi pedido</a></p>
+<p style="font-size:13px;color:#555">¿Dudas? Escríbenos al ${esc(site.whatsappDisplay)}.</p>`);
+}
+
+/** Aviso de cambio de estado al cliente. Solo funciona con dominio verificado en Resend. */
+export async function sendNoticeEmail(to: string, firstName: string, orderNumber: string, notice: OrderNotice) {
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({ from, to, subject: notice.subject, html: noticeHtml(notice, orderNumber, firstName) });
+  return { id: data?.id ?? null, error };
 }
 
 export async function sendOrderEmails(o: OrderEmailData) {
