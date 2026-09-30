@@ -4,8 +4,10 @@ import { formatCLP } from "./format";
 import { site } from "./site";
 
 const apiKey = process.env.RESEND_API_KEY ?? "";
-/** Remitente. Con `onboarding@resend.dev` Resend solo entrega a tu propio correo: verifica un dominio para enviar a clientes. */
+/** Remitente. Con `onboarding@resend.dev` Resend solo entrega a tu propio correo: verifica un dominio y cámbialo para enviar a clientes. */
 const from = process.env.RESEND_FROM || `${site.name} <onboarding@resend.dev>`;
+/** Sin dominio propio no se puede escribir a clientes: en ese modo solo se envía el aviso a la tienda. */
+const sandboxSender = /@resend\.dev>?\s*$/i.test(from);
 /** Correo de la tienda que recibe un aviso por cada pedido nuevo (opcional). */
 const notifyTo = process.env.ORDER_NOTIFY_EMAIL ?? "";
 
@@ -62,14 +64,17 @@ ${itemsTable(o)}
 
 export async function sendOrderEmails(o: OrderEmailData) {
   const resend = new Resend(apiKey);
-  const jobs = [
-    resend.emails.send({
-      from,
-      to: o.customer.email,
-      subject: `Recibimos tu pedido ${o.order_number} · ${site.name}`,
-      html: customerHtml(o),
-    }),
-  ];
+  const jobs: ReturnType<typeof resend.emails.send>[] = [];
+  if (!sandboxSender) {
+    jobs.push(
+      resend.emails.send({
+        from,
+        to: o.customer.email,
+        subject: `Recibimos tu pedido ${o.order_number} · ${site.name}`,
+        html: customerHtml(o),
+      }),
+    );
+  }
   if (notifyTo) {
     jobs.push(
       resend.emails.send({
