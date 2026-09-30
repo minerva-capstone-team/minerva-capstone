@@ -87,6 +87,13 @@ export async function placeOrder(items: CartItem[], customer: CheckoutCustomer, 
     orderNumber = res.order_number;
     total = Number(res.total);
     synced = true;
+    // Email de confirmación (Resend). No bloquea el checkout: si falla, el pedido igual quedó registrado.
+    void fetch("/api/order-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: id }),
+      keepalive: true,
+    }).catch(() => {});
   }
 
   const order: PlacedOrder = {

@@ -7,6 +7,7 @@ import { SearchOverlay } from "@/components/layout/SearchOverlay";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Toaster } from "@/components/layout/Toaster";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
+import { ChatWidget } from "@/components/layout/ChatWidget";
 import { MotionProvider } from "@/components/layout/MotionProvider";
 
 export const revalidate = 60;
@@ -40,6 +41,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SearchOverlay index={index} />
       <Toaster />
       <WhatsAppFab />
+      <ChatWidget />
       <MotionProvider />
     </>
   );

@@ -29,6 +29,8 @@ const paths = {
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
   external: <><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
+  chat: <><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5v-9Z" /><path d="M8.5 9h7M8.5 12h4.5" /></>,
+  send: <><path d="M4 12 20 4l-6 16-3-7-7-1Z" /><path d="m11 13 9-9" /></>,
 } as const;
 
 export type IconName = keyof typeof paths;
