@@ -5,8 +5,13 @@ import { formatCLP } from "./format";
 import { site } from "./site";
 
 const apiKey = process.env.GEMINI_API_KEY ?? "";
-/** `gemini-flash-latest` apunta siempre al último modelo Flash; se puede fijar uno concreto con GEMINI_MODEL. */
-const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+/**
+ * Modelos a probar en orden. `gemini-flash-latest` apunta siempre al último Flash (se puede fijar otro con GEMINI_MODEL);
+ * si está sobrecargado (503) se usa el Flash-Lite como respaldo.
+ */
+const models = [...new Set([process.env.GEMINI_MODEL || "gemini-flash-latest", "gemini-flash-lite-latest"])];
+/** Errores temporales de Google (sobrecarga, cuota por minuto, fallo interno): vale la pena reintentar. */
+const RETRYABLE = new Set([429, 500, 503, 504]);
 
 export const isChatConfigured = Boolean(apiKey);
 
@@ -48,19 +53,39 @@ Catálogo actual (nombre | categoría | precio | stock | personalización | prep
 ${catalog || "(catálogo no disponible)"}`;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function askGemini(messages: ChatMessage[]): Promise<string> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: await systemPrompt() }] },
-      contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] })),
-      generationConfig: { temperature: 0.4, maxOutputTokens: 800 },
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: await systemPrompt() }] },
+    contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] })),
+    generationConfig: { temperature: 0.4, maxOutputTokens: 800 },
   });
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
-  if (!text) throw new Error("Gemini: respuesta vacía");
-  return text;
+
+  let lastError = "";
+  // Cada modelo: un intento y un reintento tras una pausa corta; luego pasa al de respaldo.
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt) await sleep(800);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body,
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+        const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
+        if (text) return text;
+        lastError = `${model}: respuesta vacía`;
+        break;
+      }
+      lastError = `${model} ${res.status}: ${(await res.text()).slice(0, 300)}`;
+      if (!RETRYABLE.has(res.status)) {
+        // 404 = modelo inexistente → probar el siguiente; 400/403 = clave o petición inválida → no sirve seguir.
+        if (res.status === 404) break;
+        throw new Error(`Gemini ${lastError}`);
+      }
+    }
+  }
+  throw new Error(`Gemini ${lastError}`);
 }
