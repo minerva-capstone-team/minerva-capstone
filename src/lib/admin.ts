@@ -16,6 +16,24 @@ export async function revalidateStore() {
   await fetch("/api/revalidate", { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => undefined);
 }
 
+/** Pide al servidor enviar por email el aviso de estado al cliente (arma el mensaje con el estado real del pedido). */
+export async function notifyCustomer(orderId: string, kind: "status" | "shipping"): Promise<{ sent: boolean; reason?: string }> {
+  const { data } = await adminDb().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { sent: false, reason: "no session" };
+  try {
+    const res = await fetch("/api/notify-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderId, kind }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { sent?: boolean; reason?: string };
+    return res.ok ? { sent: Boolean(body.sent), reason: body.reason } : { sent: false, reason: "error" };
+  } catch {
+    return { sent: false, reason: "error" };
+  }
+}
+
 export async function uploadPublicImage(file: File, folder: string) {
   if (!file.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen.");
   if (file.size > 5 * 1024 * 1024) throw new Error("La imagen supera los 5 MB. Redúcela antes de subirla.");

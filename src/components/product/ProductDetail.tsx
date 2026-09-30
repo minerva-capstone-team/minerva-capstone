@@ -91,7 +91,8 @@ function Gallery({ product }: { product: Product }) {
 export function ProductDetail({ product }: { product: Product }) {
   const addToCart = useAddToCart();
   const inCart = useCart((s) => s.items.filter((i) => i.productId === product.id).reduce((n, i) => n + i.quantity, 0));
-  const [variantId, setVariantId] = useState(product.variants[0]?.id ?? null);
+  const [variantId, setVariantId] = useState(product.variants.find((v) => v.stock !== 0)?.id ?? product.variants[0]?.id ?? null);
+  const inCartVariant = useCart((s) => (variantId ? s.items.filter((i) => i.variantId === variantId).reduce((n, i) => n + i.quantity, 0) : 0));
   const [quantity, setQuantity] = useState(1);
   const [text, setText] = useState("");
   const [name, setName] = useState("");
@@ -103,7 +104,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const variant = product.variants.find((v) => v.id === variantId) ?? null;
   const unitPrice = product.price + (variant?.price_delta ?? 0);
   const stock = stockLabel(product.stock);
-  const available = Math.max(0, product.stock - inCart);
+  const variantLeft = variant && variant.stock !== null ? variant.stock - inCartVariant : Infinity;
+  const available = Math.max(0, Math.min(product.stock - inCart, variantLeft));
   const customization: Customization | null =
     product.customizable && (text.trim() || name.trim() || image)
       ? { text: text.trim() || undefined, name: name.trim() || undefined, imageDataUrl: image?.dataUrl, imageName: image?.name }
@@ -171,8 +173,17 @@ export function ProductDetail({ product }: { product: Product }) {
               <legend className="label">Variante</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup">
                 {product.variants.map((v) => (
-                  <button key={v.id} type="button" role="radio" aria-checked={v.id === variantId} className="chip" onClick={() => setVariantId(v.id)}>
+                  <button
+                    key={v.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={v.id === variantId}
+                    disabled={v.stock === 0}
+                    className={cn("chip", v.stock === 0 && "cursor-not-allowed line-through opacity-50")}
+                    onClick={() => setVariantId(v.id)}
+                  >
                     {v.name}
+                    {v.stock === 0 && <span className="no-underline">agotada</span>}
                     {v.price_delta !== 0 && <span className="opacity-70">{v.price_delta > 0 ? "+" : "−"}{formatCLP(Math.abs(v.price_delta))}</span>}
                   </button>
                 ))}
@@ -259,7 +270,7 @@ export function ProductDetail({ product }: { product: Product }) {
             <QuantityStepper value={quantity} onChange={setQuantity} max={Math.max(1, available)} />
             <button type="button" onClick={onAdd} disabled={available <= 0} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
               <Icon name={justAdded ? "check" : "bag"} size={20} />
-              {product.stock <= 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
+              {product.stock <= 0 || variant?.stock === 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
             </button>
           </div>
           <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-3 h-14 w-full text-base">

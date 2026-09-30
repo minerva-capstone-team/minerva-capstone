@@ -19,6 +19,8 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
    - `supabase/migrations/0001_init.sql` — tablas, RLS, función `create_order`, buckets de Storage.
    - `supabase/migrations/0002_order_emails.sql` — confirmación de pedido por email.
    - `supabase/migrations/0003_order_tracking.sql` — código de Paket y función `track_order` para la página `/seguimiento`.
+   - `supabase/migrations/0004_stock_cupones_envio_documentos.sql` — stock confiable (reservas que vencen, cancelar repone, variantes), cupones, tarifas de envío por región, envío gratis y datos de boleta/factura.
+   - `supabase/migrations/0005_push_notifications.sql` — avisos push de pedidos nuevos a la app del admin.
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
    ```env
@@ -64,9 +66,30 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
 - **Resumen:** productos activos, pedidos pendientes, ventas del mes, stock bajo.
 - **Productos:** crear, editar, eliminar, subir/ordenar/eliminar fotos, precio, precio anterior, stock, variantes, destacado, activo, etiqueta, tipo de vista previa.
 - **Categorías:** crear, editar, eliminar, imagen y orden.
-- **Pedidos:** detalle, datos del cliente, textos e imágenes de personalización, cambio de estado / pago / despacho y enlace directo a WhatsApp del cliente.
+- **Pedidos:** detalle, datos del cliente, textos e imágenes de personalización, desglose (subtotal, descuento, envío, total), cambio de estado / pago / despacho, nº de seguimiento de Paket, datos de boleta o factura con el nº y enlace del documento emitido, y avisos al cliente (ver más abajo).
+- **Cupones:** códigos de porcentaje o monto fijo, con compra mínima, máximo de usos y vencimiento; se validan y canjean en el servidor.
+- **Envíos:** tarifa por región (vacío = “se coordina por WhatsApp”), envío gratis desde cierto monto, horas que se reserva el stock de un pedido sin pagar y tope de pedidos sin pagar por email.
 
 La primera foto de un producto es la portada; la segunda aparece al pasar el cursor por la tarjeta. Mientras un producto no tenga fotos se muestra una ilustración vectorial (campo *Ilustración si no hay fotos*).
+
+### Stock
+- Al crear un pedido se descuenta el stock del producto y, si la variante tiene stock propio, también el de la variante (vacío = sin límite).
+- Un pedido **pendiente y sin pago** se cancela solo pasadas las horas de reserva (Envíos, 48 por defecto) y devuelve el stock; se revisa cada vez que entra un pedido, sin necesitar `pg_cron`.
+- Cancelar un pedido desde el admin repone el stock y el uso del cupón; reabrirlo vuelve a descontarlos (y falla con aviso si ya no alcanza).
+- Máximo de pedidos pendientes de pago por email en 24 h (3 por defecto) para que nadie bloquee el inventario.
+
+### Avisos al cliente
+- Al cambiar el estado de un pedido (o al pegar el código de Paket con el despacho en “Enviado”) se envía un email al cliente. **Requiere un dominio verificado en Resend**; sin él, el admin ofrece el botón **Avisar por WhatsApp** con el mensaje ya escrito.
+- También hay botones manuales de correo y de WhatsApp en cada pedido.
+
+### Notificaciones push en la app del admin
+1. Genera las claves una sola vez: `npx web-push generate-vapid-keys`.
+2. Configura `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (`mailto:tu@correo.cl`) en el servidor (ver `.env.example`) y vuelve a desplegar.
+3. En cada teléfono, abre `/admin`, instala la app y toca **Activar avisos de pedidos** en el menú. En iPhone solo funciona con la app instalada en la pantalla de inicio (iOS 16.4 o superior).
+- Solo funciona en producción (HTTPS): el service worker no se registra en desarrollo.
+
+### Boleta y factura
+El checkout pregunta si la clienta quiere boleta o factura; para factura pide RUT (validado con dígito verificador), razón social, giro y dirección. **La emisión ante el SII la hace tu proveedor autorizado** (Bsale, Haulmer, etc.): en el pedido registras el número y el enlace al PDF, que la clienta ve en `/seguimiento`.
 
 ---
 

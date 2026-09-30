@@ -9,14 +9,18 @@ import { cn } from "@/lib/format";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Logo } from "@/components/layout/Logo";
 import { AuthForm } from "@/components/account/AuthForm";
-import { InstallAppButton, useRegisterAdminSw } from "@/components/admin/AdminPwa";
+import { InstallAppButton, PushToggle, useRegisterAdminSw } from "@/components/admin/AdminPwa";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/admin", label: "Resumen", icon: "home" },
+  { href: "/admin/pedidos", label: "Pedidos", icon: "receipt" },
   { href: "/admin/productos", label: "Productos", icon: "tag" },
   { href: "/admin/categorias", label: "Categorías", icon: "grid" },
-  { href: "/admin/pedidos", label: "Pedidos", icon: "receipt" },
+  { href: "/admin/cupones", label: "Cupones", icon: "sparkle" },
+  { href: "/admin/envios", label: "Envíos", icon: "truck" },
 ];
+/** En el celular la barra inferior muestra estas y el resto queda en "Más". */
+const TAB_COUNT = 3;
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -132,6 +136,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
         <div className="space-y-1 border-t border-line pt-4 pb-[env(safe-area-inset-bottom)]">
+          <PushToggle className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper disabled:opacity-50" />
           <InstallAppButton className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper" />
           <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper">
             <Icon name="external" size={18} /> Ver tienda
@@ -159,7 +164,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         <ul className="grid grid-cols-4">
-          {NAV.map((n) => (
+          {NAV.slice(0, TAB_COUNT).map((n) => (
             <li key={n.href}>
               <Link
                 href={n.href}
@@ -171,6 +176,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Link>
             </li>
           ))}
+          <li>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-current={NAV.slice(TAB_COUNT).some((n) => isActive(n.href)) ? "page" : undefined}
+              className="flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-ink-soft aria-[current=page]:text-ink"
+            >
+              <Icon name="menu" size={22} />
+              Más
+            </button>
+          </li>
         </ul>
       </nav>
     </div>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getLocalOrder } from "@/lib/orders";
-import { cn } from "@/lib/format";
+import { cn, formatCLP } from "@/lib/format";
 import { orderStatusLabel } from "@/lib/order-status";
 import { normalizeOrderNumber, PAKET_TRACKING_URL, TRACKING_STEPS, trackingRank, type TrackedOrder } from "@/lib/tracking";
 import { waLink } from "@/lib/whatsapp";
@@ -194,6 +194,41 @@ export function OrderTracker({ initialOrder = "" }: { initialOrder?: string }) {
               </li>
             ))}
           </ul>
+
+          <dl className="mt-2 space-y-1.5 border-t border-line pt-4 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-ink-soft">Subtotal</dt>
+              <dd className="tabular-nums">{formatCLP(result.subtotal)}</dd>
+            </div>
+            {result.discount > 0 && (
+              <div className="flex justify-between text-[#1c6b51]">
+                <dt>Descuento</dt>
+                <dd className="tabular-nums">−{formatCLP(result.discount)}</dd>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <dt className="text-ink-soft">Envío</dt>
+              <dd className="tabular-nums">{result.shipping_pending ? "Por coordinar" : result.shipping_cost > 0 ? formatCLP(result.shipping_cost) : "Gratis"}</dd>
+            </div>
+            <div className="flex justify-between border-t border-line pt-2 font-semibold">
+              <dt>Total</dt>
+              <dd className="tabular-nums">{formatCLP(result.total)}</dd>
+            </div>
+            <div className="flex justify-between text-ink-soft">
+              <dt>{result.document_type === "factura" ? "Factura" : "Boleta"}</dt>
+              <dd>
+                {result.document_url ? (
+                  <a href={result.document_url} target="_blank" rel="noopener noreferrer" className="font-medium text-ink underline underline-offset-2">
+                    {result.document_number ? `N° ${result.document_number} · ` : ""}Ver documento
+                  </a>
+                ) : result.document_number ? (
+                  `N° ${result.document_number}`
+                ) : (
+                  "Se emite al confirmar el pago"
+                )}
+              </dd>
+            </div>
+          </dl>
 
           <a
             href={waLink(`Hola Minerva 👋 Quiero consultar por mi pedido ${result.order_number}.`)}

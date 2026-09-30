@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cartCount, cartTotal, useCart, useUI } from "@/lib/stores";
 import { formatCLP } from "@/lib/format";
+import { useFreeShippingMin } from "@/lib/checkout";
 import { Overlay } from "@/components/ui/Overlay";
 import { Icon } from "@/components/ui/Icon";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
@@ -19,6 +20,7 @@ export function CartDrawer() {
 
   const count = cartCount(items);
   const total = cartTotal(items);
+  const freeMin = useFreeShippingMin();
 
   return (
     <Overlay
@@ -105,7 +107,18 @@ export function CartDrawer() {
               <span className="text-ink-soft">Subtotal</span>
               <span className="display text-2xl tabular-nums">{formatCLP(total)}</span>
             </div>
-            <p className="mt-1 text-xs text-ink-soft">El despacho se calcula y coordina al finalizar tu compra.</p>
+            {freeMin != null && freeMin > 0 ? (
+              <div className="mt-2">
+                <p className="text-xs text-ink-soft">
+                  {total >= freeMin ? "¡Tienes envío gratis! 🎉" : `Te faltan ${formatCLP(freeMin - total)} para envío gratis.`}
+                </p>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line" aria-hidden>
+                  <div className="bg-gradient-minerva h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.min(100, (total / freeMin) * 100)}%` }} />
+                </div>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-ink-soft">El despacho se calcula y coordina al finalizar tu compra.</p>
+            )}
             <Link href="/checkout" onClick={close} className="btn btn-primary mt-4 w-full">
               Finalizar compra <Icon name="arrow" size={18} />
             </Link>

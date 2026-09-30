@@ -6,15 +6,29 @@ import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
 import { REGIONS } from "@/lib/regions";
 import { placeOrder } from "@/lib/orders";
+import { formatRut, isValidRut, quoteCheckout } from "@/lib/checkout";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { paymentProviders, type PaymentMethodId } from "@/lib/payments";
-import type { CheckoutCustomer } from "@/lib/types";
+import type { BillingData, CheckoutCustomer, CheckoutQuote, DocumentType } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { ProductImage } from "@/components/product/ProductImage";
 
 type Errors = Partial<Record<keyof CheckoutCustomer, string>>;
 
 const EMPTY: CheckoutCustomer = { first_name: "", last_name: "", email: "", phone: "", address: "", comuna: "", region: "Metropolitana de Santiago", notes: "" };
+const EMPTY_BILLING: BillingData = { rut: "", razon_social: "", giro: "", direccion: "" };
 const DRAFT_KEY = "minerva-checkout-draft";
+
+type BillingErrors = Partial<Record<keyof BillingData, string>>;
+
+function validateBilling(b: BillingData): BillingErrors {
+  const e: BillingErrors = {};
+  if (!isValidRut(b.rut)) e.rut = "Ingresa un RUT válido (ej: 76.123.456-7).";
+  if (!b.razon_social.trim()) e.razon_social = "Ingresa la razón social.";
+  if (!b.giro.trim()) e.giro = "Ingresa el giro de la empresa.";
+  if (!b.direccion.trim()) e.direccion = "Ingresa la dirección de facturación.";
+  return e;
+}
 
 function validate(c: CheckoutCustomer): Errors {
   const e: Errors = {};
@@ -38,6 +52,12 @@ export function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [placed, setPlaced] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState("");
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [documentType, setDocumentType] = useState<DocumentType>("boleta");
+  const [billing, setBilling] = useState<BillingData>(EMPTY_BILLING);
+  const [billingErrors, setBillingErrors] = useState<BillingErrors>({});
 
   useEffect(() => {
     // useCart se rehidrata en MotionProvider; esperamos a que termine
@@ -63,7 +83,27 @@ export function CheckoutForm() {
   }, [data, hydrated]);
 
   const total = cartTotal(items);
-  const set = (k: keyof CheckoutCustomer) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+
+  // Cupón + envío + total calculados por la base de datos (el pedido los vuelve a calcular al confirmar).
+  useEffect(() => {
+    if (!hydrated || !isSupabaseConfigured || total <= 0) return;
+    let alive = true;
+    const t = setTimeout(() => {
+      quoteCheckout(total, data.region, coupon).then((q) => alive && setQuote(q));
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [hydrated, total, data.region, coupon]);
+
+  const couponRejected = Boolean(coupon) && quote?.coupon_valid === false;
+  const discount = quote?.discount ?? 0;
+  const grandTotal = quote ? quote.total : total;
+  const missingForFree =
+    quote?.free_shipping_min != null && !quote.free_shipping && !quote.shipping_pending ? Math.max(quote.free_shipping_min - (total - discount), 0) : 0;
+
+  const set =(k: keyof CheckoutCustomer) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setData((d) => ({ ...d, [k]: e.target.value }));
     if (errors[k]) setErrors((er) => ({ ...er, [k]: undefined }));
   };
@@ -78,9 +118,26 @@ export function CheckoutForm() {
       document.getElementById(`co-${first}`)?.focus();
       return;
     }
+    if (couponRejected) {
+      setServerError("El cupón no es válido. Quítalo o cámbialo para continuar.");
+      return;
+    }
+    if (documentType === "factura") {
+      const bErrs = validateBilling(billing);
+      setBillingErrors(bErrs);
+      const firstBilling = Object.keys(bErrs)[0];
+      if (firstBilling) {
+        document.getElementById(`co-bill-${firstBilling}`)?.focus();
+        return;
+      }
+    }
     setSubmitting(true);
     try {
-      const order = await placeOrder(items, data, method);
+      const order = await placeOrder(items, data, method, {
+        coupon: quote?.coupon_valid ? coupon : "",
+        documentType,
+        billing: documentType === "factura" ? billing : null,
+      });
       const provider = paymentProviders.find((p) => p.id === method)!;
       setPlaced(true);
       if (method !== "whatsapp") {
@@ -193,6 +250,58 @@ export function CheckoutForm() {
         </fieldset>
 
         <fieldset className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
+          <legend className="sr-only">Documento</legend>
+          <h2 className="display text-2xl">Documento</h2>
+          <div className="mt-6 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Tipo de documento">
+            {(["boleta", "factura"] as const).map((t) => (
+              <label
+                key={t}
+                className={cn(
+                  "cursor-pointer rounded-2xl border p-4 text-center font-semibold transition-colors",
+                  documentType === t ? "border-ink bg-paper" : "border-line hover:border-ink/40",
+                )}
+              >
+                <input type="radio" name="document" value={t} checked={documentType === t} onChange={() => setDocumentType(t)} className="sr-only" />
+                {t === "boleta" ? "Boleta" : "Factura"}
+              </label>
+            ))}
+          </div>
+          {documentType === "factura" && (
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              {(
+                [
+                  ["rut", "RUT de la empresa", "sm:col-span-1", { placeholder: "76.123.456-7", inputMode: "text" as const }],
+                  ["razon_social", "Razón social", "sm:col-span-1", {}],
+                  ["giro", "Giro", "sm:col-span-2", {}],
+                  ["direccion", "Dirección de facturación", "sm:col-span-2", { autoComplete: "street-address" }],
+                ] as const
+              ).map(([k, label, span, props]) => (
+                <div key={k} className={span}>
+                  <label htmlFor={`co-bill-${k}`} className="label">
+                    {label}
+                  </label>
+                  <input
+                    id={`co-bill-${k}`}
+                    className="field"
+                    value={billing[k]}
+                    maxLength={k === "rut" ? 12 : 200}
+                    aria-invalid={Boolean(billingErrors[k])}
+                    onChange={(e) => {
+                      const v = k === "rut" ? formatRut(e.target.value) : e.target.value;
+                      setBilling((b) => ({ ...b, [k]: v }));
+                      if (billingErrors[k]) setBillingErrors((er) => ({ ...er, [k]: undefined }));
+                    }}
+                    {...props}
+                  />
+                  {billingErrors[k] && <p className="mt-1.5 text-sm text-m-red">{billingErrors[k]}</p>}
+                </div>
+              ))}
+              <p className="text-sm text-ink-soft sm:col-span-2">Te enviaremos la factura con estos datos una vez confirmado el pago.</p>
+            </div>
+          )}
+        </fieldset>
+
+        <fieldset className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
           <legend className="sr-only">Pago</legend>
           <h2 className="display text-2xl">Pago</h2>
           <div className="mt-6 space-y-3" role="radiogroup" aria-label="Método de pago">
@@ -245,18 +354,75 @@ export function CheckoutForm() {
               </li>
             ))}
           </ul>
+          {isSupabaseConfigured && (
+            <div className="mt-6 border-t border-line pt-5">
+              <label htmlFor="co-coupon" className="label">
+                Cupón de descuento
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="co-coupon"
+                  className="field h-11 flex-1 uppercase"
+                  value={couponInput}
+                  maxLength={30}
+                  autoComplete="off"
+                  placeholder="CÓDIGO"
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      setCoupon(couponInput.trim().toUpperCase());
+                    }
+                  }}
+                />
+                {coupon ? (
+                  <button
+                    type="button"
+                    className="btn btn-ghost h-11 px-4 text-sm"
+                    onClick={() => {
+                      setCoupon("");
+                      setCouponInput("");
+                    }}
+                  >
+                    Quitar
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-ghost h-11 px-4 text-sm" disabled={!couponInput.trim()} onClick={() => setCoupon(couponInput.trim().toUpperCase())}>
+                    Aplicar
+                  </button>
+                )}
+              </div>
+              {coupon && quote?.coupon_message && (
+                <p role="status" className={cn("mt-2 text-sm", quote.coupon_valid ? "text-[#1c6b51]" : "text-m-red")}>
+                  {quote.coupon_message}
+                </p>
+              )}
+            </div>
+          )}
+
           <dl className="mt-6 space-y-2 border-t border-line pt-5 text-sm">
             <div className="flex justify-between">
               <dt className="text-ink-soft">Subtotal</dt>
               <dd className="tabular-nums">{formatCLP(total)}</dd>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-[#1c6b51]">
+                <dt>Descuento ({coupon})</dt>
+                <dd className="tabular-nums">−{formatCLP(discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-ink-soft">Envío</dt>
-              <dd>Se coordina por WhatsApp</dd>
+              <dd className="tabular-nums">
+                {!quote || quote.shipping_pending ? "Se coordina por WhatsApp" : quote.shipping > 0 ? formatCLP(quote.shipping) : "Gratis"}
+              </dd>
             </div>
+            {missingForFree > 0 && (
+              <p className="rounded-xl bg-m-green/10 px-3 py-2 text-[#1c6b51]">Te faltan {formatCLP(missingForFree)} para tener envío gratis.</p>
+            )}
             <div className="flex items-baseline justify-between border-t border-line pt-3">
-              <dt className="font-semibold">Total productos</dt>
-              <dd className="display text-2xl tabular-nums">{formatCLP(total)}</dd>
+              <dt className="font-semibold">Total{!quote || quote.shipping_pending ? " (sin envío)" : ""}</dt>
+              <dd className="display text-2xl tabular-nums">{formatCLP(grandTotal)}</dd>
             </div>
           </dl>
 

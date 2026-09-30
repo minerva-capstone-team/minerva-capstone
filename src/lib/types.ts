@@ -104,10 +104,38 @@ export interface CheckoutCustomer {
   notes: string;
 }
 
+export type DocumentType = "boleta" | "factura";
+
+export interface BillingData {
+  rut: string;
+  razon_social: string;
+  giro: string;
+  direccion: string;
+}
+
+export interface CheckoutQuote {
+  coupon_valid: boolean | null;
+  coupon_message: string | null;
+  discount: number;
+  shipping: number;
+  shipping_pending: boolean;
+  free_shipping: boolean;
+  free_shipping_min: number | null;
+  total: number;
+}
+
 export interface PlacedOrder {
   id: string;
   order_number: string;
+  /** Total final (productos − descuento + envío). */
   total: number;
+  subtotal: number;
+  discount: number;
+  shipping_cost: number;
+  /** true cuando el envío de esa región aún no tiene tarifa y se coordina por WhatsApp. */
+  shipping_pending: boolean;
+  coupon_code: string | null;
+  document_type: DocumentType;
   created_at: string;
   customer: CheckoutCustomer;
   items: { name: string; variantName: string | null; quantity: number; unitPrice: number; customization: Customization | null }[];

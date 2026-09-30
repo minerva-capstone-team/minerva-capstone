@@ -19,6 +19,7 @@
     "resend": "^6.31.0",
     "server-only": "^0.0.1",
     "three": "^0.186.0",
+    "web-push": "^3.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -27,6 +28,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "@types/web-push": "^3.6.4",
     "postcss": "^8.5.28",
     "supabase": "^2.118.0",
     "tailwindcss": "^4.3.3",

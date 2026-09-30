@@ -67,10 +67,32 @@ export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
-          <span className="font-semibold">Total productos</span>
-          <span className="display text-2xl tabular-nums">{formatCLP(order.total)}</span>
-        </div>
+        <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-ink-soft">Subtotal</dt>
+            <dd className="tabular-nums">{formatCLP(order.subtotal)}</dd>
+          </div>
+          {order.discount > 0 && (
+            <div className="flex justify-between text-[#1c6b51]">
+              <dt>Descuento{order.coupon_code ? ` (${order.coupon_code})` : ""}</dt>
+              <dd className="tabular-nums">−{formatCLP(order.discount)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <dt className="text-ink-soft">Envío</dt>
+            <dd className="tabular-nums">
+              {order.shipping_pending ? "Se coordina por WhatsApp" : order.shipping_cost > 0 ? formatCLP(order.shipping_cost) : "Gratis"}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between border-t border-line pt-3">
+            <dt className="font-semibold">Total{order.shipping_pending ? " (sin envío)" : ""}</dt>
+            <dd className="display text-2xl tabular-nums">{formatCLP(order.total)}</dd>
+          </div>
+          <div className="flex justify-between text-ink-soft">
+            <dt>Documento</dt>
+            <dd>{order.document_type === "factura" ? "Factura" : "Boleta"}</dd>
+          </div>
+        </dl>
         <p className="mt-4 text-sm text-ink-soft">
           Entrega: {order.customer.address}, {order.customer.comuna}, {order.customer.region}
         </p>
