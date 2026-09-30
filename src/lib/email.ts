@@ -87,5 +87,10 @@ export async function sendOrderEmails(o: OrderEmailData) {
     );
   }
   const results = await Promise.all(jobs);
-  return results.map((r) => r.error).filter(Boolean);
+  return {
+    /** Cuántos emails se intentaron enviar (0 = no había destinatarios configurados). */
+    attempted: jobs.length,
+    ids: results.map((r) => r.data?.id).filter(Boolean),
+    errors: results.map((r) => r.error).filter(Boolean),
+  };
 }
