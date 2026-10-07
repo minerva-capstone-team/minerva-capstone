@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { handleInstagramPayload, isInstagramConfigured, validSignature, validVerifyToken, type IgPayload } from "@/lib/instagram";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /** Meta llama aquí una vez, al configurar el webhook, para comprobar que la URL es tuya. */
 export function GET(req: NextRequest) {

@@ -65,6 +65,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Solo para pruebas locales: permite apuntar a un servidor falso en vez de Google. */
 const apiBase = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
+/** Máximo de espera por intento: si Google no responde, se reintenta o se usa el modelo de respaldo. */
+const ATTEMPT_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 12_000;
 
 export async function askGemini(messages: ChatMessage[], channel: ChatChannel = "web"): Promise<string> {
   const body = JSON.stringify({
@@ -78,22 +80,31 @@ export async function askGemini(messages: ChatMessage[], channel: ChatChannel = 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt) await sleep(800);
-      const res = await fetch(`${apiBase}/models/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body,
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-        const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
-        if (text) return text;
-        lastError = `${model}: respuesta vacía`;
-        break;
+      let status = 0;
+      try {
+        const res = await fetch(`${apiBase}/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body,
+          signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+          const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
+          if (text) return text;
+          lastError = `${model}: respuesta vacía`;
+          break;
+        }
+        status = res.status;
+        lastError = `${model} ${res.status}: ${(await res.text()).slice(0, 300)}`;
+      } catch (err) {
+        // Sin respuesta a tiempo o error de red: se reintenta / pasa al modelo de respaldo.
+        lastError = `${model}: ${(err as Error).name === "TimeoutError" ? `sin respuesta en ${ATTEMPT_TIMEOUT_MS / 1000}s` : (err as Error).message}`;
+        continue;
       }
-      lastError = `${model} ${res.status}: ${(await res.text()).slice(0, 300)}`;
-      if (!RETRYABLE.has(res.status)) {
+      if (!RETRYABLE.has(status)) {
         // 404 = modelo inexistente → probar el siguiente; 400/403 = clave o petición inválida → no sirve seguir.
-        if (res.status === 404) break;
+        if (status === 404) break;
         throw new Error(`Gemini ${lastError}`);
       }
     }
