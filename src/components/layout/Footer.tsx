@@ -97,7 +97,12 @@ export function Footer() {
 
       <div className="container-x flex flex-col items-start justify-between gap-3 border-t border-line py-6 text-sm text-ink-soft sm:flex-row sm:items-center">
         <p>© Minerva {new Date().getFullYear()} · Estampados y Papelería</p>
-        <p className="flex items-center gap-2">Hecho con cariño en Chile <ChileFlag /></p>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <Link href="/privacidad" className="hover:text-ink hover:underline">
+            Política de privacidad
+          </Link>
+          <span className="flex items-center gap-2">Hecho con cariño en Chile <ChileFlag /></span>
+        </p>
       </div>
 
       <p aria-hidden="true" className="display pointer-events-none select-none whitespace-nowrap text-center text-[22vw] leading-[0.8] text-ink/[0.035]">

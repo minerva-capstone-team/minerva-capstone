@@ -444,7 +444,11 @@ export function CheckoutForm() {
             )}
           </button>
           <p className="mt-3 text-center text-xs text-ink-soft">
-            Al confirmar registramos tu pedido y te llevamos a coordinar el pago y envío por WhatsApp.
+            Al confirmar registramos tu pedido y te llevamos a coordinar el pago y envío por WhatsApp. Usamos tus datos solo para gestionarlo; revisa nuestra{" "}
+            <Link href="/privacidad" className="underline underline-offset-2 hover:text-ink">
+              política de privacidad
+            </Link>
+            .
           </p>
         </div>
       </aside>
