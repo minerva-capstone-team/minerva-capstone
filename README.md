@@ -103,6 +103,30 @@ La arquitectura está en `src/lib/payments/index.ts`. Hoy el checkout registra e
 
 ---
 
+## 4b. Bot de Instagram (mensajes directos)
+
+El bot responde los DM de Instagram con el mismo Gemini del chat de la página (catálogo, precios y preguntas frecuentes reales). Usa la **API de Instagram con inicio de sesión de Instagram** de Meta: no requiere página de Facebook, solo una cuenta de Instagram **profesional** (empresa o creador).
+
+Flujo: Meta avisa a `POST /api/instagram` (webhook firmado) → se verifica la firma con el App Secret → se responde `200` de inmediato → el bot consulta Gemini y contesta por `graph.instagram.com/me/messages`.
+
+1. Instagram → Configuración → *Tipo de cuenta y herramientas* → cambiar a cuenta profesional.
+2. En [developers.facebook.com](https://developers.facebook.com) crea una app con el caso de uso de mensajes de Instagram y añade la cuenta de Instagram en *Configuración de la API de Instagram con inicio de sesión*.
+3. Genera el **token de acceso** (`INSTAGRAM_ACCESS_TOKEN`) y copia el **App Secret** (`INSTAGRAM_APP_SECRET`, en Configuración → Básica). Inventa una frase para `INSTAGRAM_VERIFY_TOKEN`.
+4. Carga las tres variables en el servidor (Vercel) y redespliega (ver `.env.example`).
+5. En *Configurar webhooks* pon la URL `https://TU-DOMINIO/api/instagram` y tu verify token, y suscribe el campo **`messages`**.
+6. Prueba escribiéndole a la cuenta desde otro Instagram agregado como *Instagram Tester* de la app.
+7. Para que responda a **cualquier persona**, la app necesita *Acceso avanzado* al permiso de mensajes (revisión de Meta; piden política de privacidad, video demostrativo y, a veces, verificación del negocio) y pasar a modo **Live**.
+
+Detalles de funcionamiento:
+- Ignora los mensajes de la propia cuenta (ecos), duplicados reenviados por Meta y los que no son texto (avisa una vez por hora que solo lee texto).
+- Máximo 20 respuestas por hora por persona y 8 mensajes de memoria por conversación (en memoria del servidor: no se guarda nada en disco; en serverless puede reiniciarse).
+- Si Gemini falla, responde derivando al WhatsApp de la tienda.
+- Instagram solo permite responder dentro de las 24 horas siguientes al último mensaje de la persona.
+- El token de acceso dura ~60 días: hay que renovarlo antes de que venza (`GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=TOKEN`) y actualizar la variable en el servidor.
+- Los mensajes de las clientas pasan por Google (Gemini); en el plan gratuito Google puede usarlos para mejorar sus productos.
+
+---
+
 ## 5. Estructura
 
 ```
