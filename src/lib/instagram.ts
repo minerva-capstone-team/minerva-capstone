@@ -42,13 +42,30 @@ function clip(text: string, maxBytes = 950) {
 }
 
 export async function sendDm(recipientId: string, text: string) {
-  const res = await fetch(`${graph}/me/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ recipient: { id: recipientId }, message: { text: clip(text) } }),
+  try {
+    const res = await fetch(`${graph}/me/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ recipient: { id: recipientId }, message: { text: clip(text) } }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) console.error(`[instagram] no se pudo enviar el mensaje (${res.status}):`, (await res.text()).slice(0, 300));
+    return res.ok;
+  } catch (err) {
+    console.error("[instagram] error de red al enviar el mensaje:", (err as Error).message);
+    return false;
+  }
+}
+
+/** Plazo máximo para que el bot piense; pasado ese tiempo se responde el mensaje de respaldo (la función tiene 60 s). */
+const REPLY_DEADLINE_MS = Number(process.env.INSTAGRAM_REPLY_DEADLINE_MS) || 40_000;
+
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`sin respuesta en ${ms / 1000}s`)), ms);
   });
-  if (!res.ok) console.error(`[instagram] no se pudo enviar el mensaje (${res.status}):`, (await res.text()).slice(0, 300));
-  return res.ok;
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
 /* ------------------------- Memoria corta (en memoria) ------------------------ */
@@ -127,11 +144,13 @@ async function handleEvent(accountId: string | undefined, ev: IgMessagingEvent) 
 
   remember(sender, { role: "user", text: text.slice(0, 1000) });
   let reply = FALLBACK;
+  const started = Date.now();
   try {
-    reply = await askGemini(history.get(sender)!.messages, "instagram");
+    reply = await withDeadline(askGemini(history.get(sender)!.messages, "instagram"), REPLY_DEADLINE_MS);
     remember(sender, { role: "assistant", text: reply });
+    console.info(`[instagram] respuesta generada en ${Date.now() - started} ms`);
   } catch (err) {
-    console.error("[instagram] Gemini falló:", err);
+    console.error(`[instagram] Gemini falló tras ${Date.now() - started} ms:`, err);
   }
   await sendDm(sender, reply);
 }
