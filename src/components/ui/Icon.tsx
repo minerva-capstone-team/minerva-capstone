@@ -31,6 +31,10 @@ const paths = {
   external: <><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
   chat: <><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5v-9Z" /><path d="M8.5 9h7M8.5 12h4.5" /></>,
   send: <><path d="M4 12 20 4l-6 16-3-7-7-1Z" /><path d="m11 13 9-9" /></>,
+  chart: <><path d="M4 20h16" /><path d="M7 16v-5" /><path d="M12 16V7" /><path d="M17 16v-8" /></>,
+  calendar: <><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" /><path d="M4 10h16" /><path d="M8.5 3.5v4" /><path d="M15.5 3.5v4" /></>,
+  board: <><rect x="4" y="4" width="16" height="16" rx="2.5" /><path d="M9.5 4v16" /><path d="M14.5 4v16" /></>,
+  printer: <><path d="M7 9V4h10v5" /><rect x="4" y="9" width="16" height="7" rx="2" /><path d="M7 14h10v6H7z" /></>,
 } as const;
 
 export type IconName = keyof typeof paths;

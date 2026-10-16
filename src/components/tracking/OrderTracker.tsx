@@ -8,6 +8,7 @@ import { orderStatusLabel } from "@/lib/order-status";
 import { normalizeOrderNumber, PAKET_TRACKING_URL, TRACKING_STEPS, trackingRank, type TrackedOrder } from "@/lib/tracking";
 import { waLink } from "@/lib/whatsapp";
 import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
+import { DesignProofCard } from "@/components/tracking/DesignProofCard";
 
 function Timeline({ order }: { order: TrackedOrder }) {
   const rank = trackingRank(order);
@@ -179,6 +180,14 @@ export function OrderTracker({ initialOrder = "" }: { initialOrder?: string }) {
             </p>
           ) : (
             <>
+              {result.proof && (
+                <DesignProofCard
+                  proof={result.proof}
+                  orderNumber={result.order_number}
+                  email={email}
+                  onChange={(proof) => setResult((r) => (r ? { ...r, proof } : r))}
+                />
+              )}
               <Timeline order={result} />
               <Shipping order={result} />
             </>

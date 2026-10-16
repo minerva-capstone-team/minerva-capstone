@@ -132,3 +132,42 @@ export async function sendOrderEmails(o: OrderEmailData) {
     errors: results.map((r) => r.error).filter(Boolean),
   };
 }
+
+export interface WelcomeEmailData {
+  /** null cuando el correo ya tenía cuenta: no se cambia su contraseña. */
+  password: string | null;
+  couponCode: string;
+  percent: number;
+  productName: string | null;
+  expiresAt: Date;
+}
+
+function welcomeHtml(to: string, d: WelcomeEmailData) {
+  const login = `${site.url}/cuenta`;
+  const what = d.productName ? `${d.percent}% de descuento en ${esc(d.productName)}` : `${d.percent}% de descuento en tu próxima compra`;
+  const until = d.expiresAt.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+  const access = d.password
+    ? `<p style="margin:0 0 8px">Creamos tu cuenta en Minerva. Entra con estos datos:</p>
+<table cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:15px">
+<tr><td style="padding:4px 12px 4px 0;color:#555">Correo</td><td style="padding:4px 0;font-weight:bold">${esc(to)}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#555">Contraseña temporal</td><td style="padding:4px 0;font-family:monospace;font-size:17px;font-weight:bold">${esc(d.password)}</td></tr>
+</table>
+<p style="margin:0 0 20px;font-size:13px;color:#555">Al entrar por primera vez te pediremos cambiarla por una tuya. No compartas este correo.</p>`
+    : `<p style="margin:0 0 20px">Ya tenías una cuenta con este correo, así que dejamos el cupón ahí. Entra con tu contraseña de siempre (si no la recuerdas, usa "¿Olvidaste tu contraseña?").</p>`;
+  return wrap(`<h1 style="font-size:22px;margin:0 0 8px">¡Bienvenida a ${esc(site.name)}!</h1>
+<p style="margin:0 0 16px">Gracias por escribirnos por Instagram. Te dejamos un regalo: <strong>${what}</strong>.</p>
+${access}
+<p style="margin:0 0 6px;color:#555">Tu cupón</p>
+<p style="margin:0 0 6px;padding:14px 16px;background:#f6f6f6;border-radius:8px;font-family:monospace;font-size:20px;font-weight:bold">${esc(d.couponCode)}</p>
+<p style="margin:0 0 20px;font-size:13px;color:#555">Válido hasta el ${until}, un solo uso, con este mismo correo. Se aplica solo en el checkout cuando inicias sesión.</p>
+<p style="margin:24px 0"><a href="${login}" style="background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">Entrar a mi cuenta</a></p>
+<p style="font-size:13px;color:#555">Si no pediste esto, ignora este correo o escríbenos al ${esc(site.whatsappDisplay)}.</p>`);
+}
+
+/** Correo con la cuenta y el cupón creados desde Instagram. Requiere dominio verificado. */
+export async function sendWelcomeEmail(to: string, d: WelcomeEmailData) {
+  const resend = new Resend(apiKey);
+  const subject = d.password ? `Tu cuenta y tu cupón de ${site.name}` : `Tu cupón de ${site.name}`;
+  const { data, error } = await resend.emails.send({ from, to, subject, html: welcomeHtml(to, d) });
+  return { id: data?.id ?? null, error };
+}

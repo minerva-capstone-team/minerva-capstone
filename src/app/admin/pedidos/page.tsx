@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { adminDb, errorMessage, notifyCustomer } from "@/lib/admin";
 import { UPLOADS_BUCKET } from "@/lib/supabase/config";
 import { cn, formatCLP } from "@/lib/format";
@@ -9,6 +10,7 @@ import { toast } from "@/lib/stores";
 import { waTo } from "@/lib/whatsapp";
 import { AdminHeader } from "@/components/admin/AdminShell";
 import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
+import { DesignProofsSection, GiftSection, type ProofRow } from "@/components/admin/OrderExtras";
 
 interface OrderRow {
   id: string;
@@ -30,6 +32,11 @@ interface OrderRow {
   document_number: string | null;
   document_url: string | null;
   document_issued_at: string | null;
+  gift_message?: string | null;
+  gift_from?: string | null;
+  gift_code?: string | null;
+  gift_opened_at?: string | null;
+  design_proofs?: ProofRow[];
   created_at: string;
   customer: { first_name: string; last_name: string; email: string; phone: string; address: string; comuna: string; region: string } | null;
   order_items: {
@@ -68,23 +75,46 @@ function CustomImage({ path }: { path: string }) {
   );
 }
 
-export default function AdminOrders() {
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOrders />
+    </Suspense>
+  );
+}
+
+function AdminOrders() {
+  const params = useSearchParams();
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [filter, setFilter] = useState<string>("todos");
   const [open, setOpen] = useState<string | null>(null);
+  const wanted = params.get("pedido");
 
   const load = useCallback(async () => {
-    const { data, error } = await adminDb()
+    let res = await adminDb()
       .from("orders")
-      .select("*, customer:customers(*), order_items(*)")
+      .select("*, customer:customers(*), order_items(*), design_proofs(id,version,status,image_url,note,customer_comment,created_at,responded_at)")
       .order("created_at", { ascending: false })
       .limit(200);
+    // Sin la migración 0006 la tabla design_proofs no existe: cae a la consulta anterior.
+    if (res.error) res = await adminDb().from("orders").select("*, customer:customers(*), order_items(*)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    const { data, error } = res;
     if (error) toast({ title: "Error al cargar pedidos", description: error.message, tone: "error" });
     setOrders((data as OrderRow[]) ?? []);
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
+  // /admin/pedidos?pedido=<id o número>: abre ese pedido (enlaces desde Producción y Taller).
+  useEffect(() => {
+    if (!wanted || !orders) return;
+    const o = orders.find((x) => x.id === wanted || x.order_number === wanted);
+    if (!o) return;
+    setOpen(o.id);
+    requestAnimationFrame(() => document.getElementById(`order-${o.id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }, [wanted, orders]);
 
   const whatsappFor = (o: OrderRow) => {
     if (!o.customer) return null;
@@ -158,7 +188,7 @@ export default function AdminOrders() {
             const expanded = open === o.id;
             const c = o.customer;
             return (
-              <li key={o.id} className="overflow-hidden rounded-3xl bg-white shadow-[var(--shadow-soft)]">
+              <li key={o.id} id={`order-${o.id}`} className="scroll-mt-24 overflow-hidden rounded-3xl bg-white shadow-[var(--shadow-soft)]">
                 <button type="button" onClick={() => setOpen(expanded ? null : o.id)} aria-expanded={expanded} className="flex w-full flex-wrap items-center gap-x-6 gap-y-2 p-5 text-left">
                   <span className="min-w-36">
                     <span className="block font-semibold">{o.order_number}</span>
@@ -331,6 +361,11 @@ export default function AdminOrders() {
                           La boleta o factura se emite con tu proveedor autorizado por el SII; aquí registras su número y enlace, que la clienta verá en /seguimiento.
                         </p>
                       </div>
+
+                      {o.order_items.some((i) => i.customization_data) || (o.design_proofs?.length ?? 0) > 0 ? (
+                        <DesignProofsSection orderId={o.id} proofs={o.design_proofs ?? []} onChanged={() => void load()} />
+                      ) : null}
+                      {o.gift_message && <GiftSection orderId={o.id} message={o.gift_message} from={o.gift_from ?? null} openedAt={o.gift_opened_at ?? null} />}
 
                       <div className="space-y-2">
                         <button type="button" className="btn btn-ghost w-full" onClick={() => void notify(o, o.delivery_status === "enviado" && o.tracking_code ? "shipping" : "status", true)}>

@@ -8,6 +8,8 @@ export interface PlaceOrderOptions {
   coupon?: string;
   documentType?: DocumentType;
   billing?: BillingData | null;
+  /** Mensaje secreto para quien recibe el regalo (se lee con el QR de la tarjeta). */
+  gift?: { message: string; from: string } | null;
 }
 
 function friendlyOrderError(message: string) {
@@ -80,6 +82,7 @@ export async function placeOrder(
   let shippingCost = 0;
   let shippingPending = true;
   let couponCode: string | null = null;
+  let giftCode: string | null = null;
   let synced = false;
 
   if (sb) {
@@ -116,10 +119,12 @@ export async function placeOrder(
         coupon,
         document_type: documentType,
         billing: documentType === "factura" ? options.billing : null,
+        gift: options.gift?.message.trim() ? options.gift : null,
       },
     });
     if (error) throw new Error(friendlyOrderError(error.message));
-    const res = data as { id: string; order_number: string; total: number; subtotal: number; discount: number; shipping_cost: number; shipping_pending: boolean };
+    const res = data as { id: string; order_number: string; total: number; subtotal: number; discount: number; shipping_cost: number; shipping_pending: boolean; gift_code: string | null };
+    giftCode = res.gift_code ?? null;
     id = res.id;
     orderNumber = res.order_number;
     total = Number(res.total);
@@ -148,6 +153,7 @@ export async function placeOrder(
     shipping_pending: shippingPending,
     coupon_code: couponCode,
     document_type: documentType,
+    gift: Boolean(giftCode),
     created_at: new Date().toISOString(),
     customer,
     payment_method: paymentMethod,

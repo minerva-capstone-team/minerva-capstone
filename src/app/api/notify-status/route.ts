@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { orderId, kind } = (await req.json().catch(() => ({}))) as { orderId?: string; kind?: NotifyKind };
-  if (!orderId || !UUID.test(orderId) || (kind !== "status" && kind !== "shipping")) return NextResponse.json({ error: "bad request" }, { status: 400 });
+  if (!orderId || !UUID.test(orderId) || (kind !== "status" && kind !== "shipping" && kind !== "proof")) return NextResponse.json({ error: "bad request" }, { status: 400 });
 
   const sb = getServerSupabase(token);
   if (!sb) return NextResponse.json({ error: "not configured" }, { status: 503 });
@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const customer = (Array.isArray(data.customer) ? data.customer[0] : data.customer) as { first_name: string; email: string } | null;
-  const notice = noticeFor(kind, data as unknown as NotifyOrder);
+  let proofPending = false;
+  if (kind === "proof") {
+    const { data: proof } = await sb.from("design_proofs").select("status").eq("order_id", orderId).order("version", { ascending: false }).limit(1).maybeSingle();
+    proofPending = proof?.status === "pendiente";
+  }
+  const notice = noticeFor(kind, { ...(data as unknown as NotifyOrder), proof_pending: proofPending });
   if (!customer || !notice) return NextResponse.json({ sent: false, reason: "nothing to notify" });
   if (!isEmailConfigured) return NextResponse.json({ sent: false, reason: "email not configured" });
   if (!canEmailCustomers) return NextResponse.json({ sent: false, reason: "no verified domain" });

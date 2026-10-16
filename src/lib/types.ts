@@ -136,6 +136,8 @@ export interface PlacedOrder {
   shipping_pending: boolean;
   coupon_code: string | null;
   document_type: DocumentType;
+  /** El pedido lleva tarjeta con mensaje secreto (QR). */
+  gift?: boolean;
   created_at: string;
   customer: CheckoutCustomer;
   items: { name: string; variantName: string | null; quantity: number; unitPrice: number; customization: Customization | null }[];

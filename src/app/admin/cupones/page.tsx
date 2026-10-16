@@ -17,6 +17,9 @@ interface Coupon {
   uses: number;
   expires_at: string | null;
   active: boolean;
+  email?: string | null;
+  source?: "admin" | "instagram";
+  product?: { name: string } | null;
 }
 
 interface Draft {
@@ -44,6 +47,8 @@ const describe = (c: Coupon) =>
     c.kind === "percent" ? `${c.value}% de descuento` : `${formatCLP(c.value)} de descuento`,
     c.min_subtotal > 0 ? `compra mínima ${formatCLP(c.min_subtotal)}` : null,
     `${c.uses}${c.max_uses !== null ? ` de ${c.max_uses}` : ""} ${c.uses === 1 ? "uso" : "usos"}`,
+    c.product ? `solo ${c.product.name}` : null,
+    c.email ? `personal: ${c.email}` : null,
     c.expires_at ? `vence ${new Date(c.expires_at).toLocaleDateString("es-CL")}` : null,
   ]
     .filter(Boolean)
@@ -56,13 +61,23 @@ export default function AdminCoupons() {
   const [toDelete, setToDelete] = useState<Coupon | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await adminDb().from("coupons").select("*").order("created_at", { ascending: false });
+    let res = await adminDb().from("coupons").select("*, product:products(name)").order("created_at", { ascending: false });
+    // Sin la migración 0007 no existe coupons.product_id: cae a la consulta simple.
+    if (res.error) res = await adminDb().from("coupons").select("*").order("created_at", { ascending: false });
+    const { data, error } = res;
     if (error) toast({ title: "Error al cargar cupones", description: errorMessage(error), tone: "error" });
     setItems((data as Coupon[]) ?? []);
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
+  // Desde el Calendario comercial: /admin/cupones?nuevo=MAMA27&vence=2027-05-09 abre el formulario prellenado.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const code = q.get("nuevo")?.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+    const expires = q.get("vence");
+    if (code) setDraft({ ...EMPTY, code, expires: expires && /^\d{4}-\d{2}-\d{2}$/.test(expires) ? expires : "" });
+  }, []);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

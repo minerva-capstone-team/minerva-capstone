@@ -61,6 +61,16 @@ export default function PrivacyPage() {
               responderte.
             </li>
             <li>
+              <strong>Si nos das tu correo por Instagram para recibir un cupón:</strong> tu correo, para crear tu cuenta y enviarte el acceso y el cupón. Solo lo hacemos si lo
+              confirmas respondiendo «sí»; no lo usamos para enviarte publicidad.
+            </li>
+            <li>
+              <strong>Si compras un regalo:</strong> el mensaje y la firma que escribes para la tarjeta. Solo los puede leer quien tenga el código QR de la tarjeta.
+            </li>
+            <li>
+              <strong>Si tu pedido es personalizado:</strong> las pruebas de diseño que te enviamos y tu respuesta (aprobación o cambios pedidos).
+            </li>
+            <li>
               <strong>Datos técnicos:</strong> como en cualquier sitio, el servidor registra datos básicos de conexión (por ejemplo, dirección IP y navegador) para que la página funcione y
               para evitar abusos.
             </li>
@@ -135,8 +145,9 @@ export default function PrivacyPage() {
             .
           </p>
           <p>
-            No guardamos las conversaciones del asistente de la página. En Instagram, para entender el contexto, el servidor recuerda de forma temporal los últimos mensajes de la conversación
-            (hasta 24 horas, solo en su memoria).
+            Para mejorar nuestras respuestas y saber qué productos interesan, guardamos las preguntas que se hacen al asistente (de la página y de Instagram) y la respuesta que se dio,
+            <strong> sin tu nombre ni tu usuario</strong>: en vez del identificador guardamos un código cifrado que no permite saber quién escribió. Estos registros se borran solos a los 90
+            días. Además, en Instagram el servidor recuerda de forma temporal los últimos mensajes de la conversación (hasta 24 horas, solo en su memoria) para entender el contexto.
           </p>
         </Section>
 
@@ -144,6 +155,8 @@ export default function PrivacyPage() {
           <ul>
             <li>Los datos de pedidos y documentos tributarios, durante el tiempo que exija la ley tributaria y mientras sean necesarios para garantías, reclamos y postventa.</li>
             <li>Las imágenes y textos de personalización, mientras sean necesarios para producir y entregar tu pedido y atender reclamos.</li>
+            <li>Las preguntas al asistente (sin datos que te identifiquen), 90 días.</li>
+            <li>Mensajes de regalo y pruebas de diseño, junto con el pedido al que pertenecen.</li>
             <li>Tu cuenta, hasta que pidas eliminarla.</li>
             <li>Los datos que ya no necesitemos y que la ley no nos obligue a conservar los eliminamos cuando lo solicites.</li>
           </ul>
@@ -177,7 +190,7 @@ export default function PrivacyPage() {
             <li>Eliminaremos tus datos personales de nuestros sistemas y te avisaremos cuando esté listo. Los documentos que la ley tributaria nos obliga a conservar se mantienen solo por ese motivo.</li>
           </ol>
           <p>
-            Si solo hablaste con nuestro asistente en Instagram, no guardamos esas conversaciones más allá de la memoria temporal descrita arriba. También puedes borrar el chat desde Instagram y
+            Si solo hablaste con nuestro asistente, las preguntas quedan guardadas sin datos que te identifiquen y se borran solas a los 90 días. También puedes borrar el chat desde Instagram y
             quitar el acceso de Minerva a tu cuenta desde la configuración de Instagram.
           </p>
         </Section>

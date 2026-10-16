@@ -1,4 +1,5 @@
 "use client";
+import type { NotifyKind } from "./order-notify";
 import { getBrowserSupabase } from "./supabase/client";
 import { PRODUCT_BUCKET } from "./supabase/config";
 
@@ -17,7 +18,7 @@ export async function revalidateStore() {
 }
 
 /** Pide al servidor enviar por email el aviso de estado al cliente (arma el mensaje con el estado real del pedido). */
-export async function notifyCustomer(orderId: string, kind: "status" | "shipping"): Promise<{ sent: boolean; reason?: string }> {
+export async function notifyCustomer(orderId: string, kind: NotifyKind): Promise<{ sent: boolean; reason?: string }> {
   const { data } = await adminDb().auth.getSession();
   const token = data.session?.access_token;
   if (!token) return { sent: false, reason: "no session" };

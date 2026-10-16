@@ -45,7 +45,12 @@ Reglas:
 ${
   channel === "instagram"
     ? `- Estás conversando por mensajes directos de Instagram: responde en máximo 3 frases cortas (menos de 600 caracteres), sin listas largas.
-- Cuando recomiendes un producto, escribe su enlace completo anteponiendo ${site.url} a la ruta (ej: ${site.url}/productos/taza-personalizada), porque las rutas sueltas no se pueden abrir desde Instagram.`
+- Cuando recomiendes un producto, escribe su enlace completo anteponiendo ${site.url} a la ruta (ej: ${site.url}/productos/taza-personalizada), porque las rutas sueltas no se pueden abrir desde Instagram.${
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+          ? `
+- Promoción real de bienvenida: si la persona muestra interés en comprar o pregunta por descuentos, invítala (una sola vez en la conversación) a escribir su correo para crearle una cuenta con un cupón del 10% por 30 días, que le llega al correo. No pidas su correo de nuevo si ya lo dio.`
+          : ""
+      }`
     : "- Cuando recomiendes un producto, incluye su ruta tal cual (ej: /productos/taza-personalizada) para que el cliente pueda abrirla."
 }
 - El pedido se hace en la web (carrito → checkout) y el pago y envío se coordinan por WhatsApp.
