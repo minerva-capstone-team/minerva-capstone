@@ -10,6 +10,7 @@ import { orderStatusLabel } from "@/lib/order-status";
 import type { PlacedOrder } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { AuthForm } from "./AuthForm";
+import { ChangeTempPassword, MyCoupons } from "./AccountExtras";
 
 interface RemoteOrder {
   id: string;
@@ -28,6 +29,8 @@ export function AccountView() {
   const [remote, setRemote] = useState<RemoteOrder[] | null>(null);
   const [local, setLocal] = useState<PlacedOrder[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pwChanged, setPwChanged] = useState(false);
+  const mustChangePassword = Boolean(session?.user.user_metadata?.must_change_password) && !pwChanged;
 
   useEffect(() => setLocal(getLocalOrders()), []);
 
@@ -65,6 +68,8 @@ export function AccountView() {
                 <Icon name="logout" size={18} /> Cerrar sesión
               </button>
             </div>
+            {mustChangePassword && <ChangeTempPassword onDone={() => setPwChanged(true)} />}
+            {pwChanged && <p className="mt-4 rounded-xl bg-m-green/12 p-3 text-sm text-[#1c6b51]">Listo, tu contraseña quedó guardada.</p>}
           </div>
         ) : (
           <AuthForm />
@@ -72,6 +77,7 @@ export function AccountView() {
       </div>
 
       <div className="space-y-10 lg:col-span-7">
+        {session && <MyCoupons />}
         {session && (
           <section aria-labelledby="remote-orders">
             <h2 id="remote-orders" className="display text-2xl">

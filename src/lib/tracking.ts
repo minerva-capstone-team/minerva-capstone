@@ -17,7 +17,19 @@ export interface TrackedOrder {
   document_type: "boleta" | "factura";
   document_number: string | null;
   document_url: string | null;
+  gift?: boolean;
+  proof?: DesignProof | null;
   items: { name: string; variant: string | null; quantity: number }[];
+}
+
+export interface DesignProof {
+  id: string;
+  version: number;
+  image_url: string;
+  note: string | null;
+  status: "pendiente" | "aprobado" | "cambios";
+  customer_comment: string | null;
+  created_at: string;
 }
 
 export const TRACKING_STEPS = [

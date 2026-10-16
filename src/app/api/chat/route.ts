@@ -1,5 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { askGemini, isChatConfigured, type ChatMessage } from "@/lib/chat";
+import { logAssistantMessage } from "@/lib/assistant-log";
 
 const MAX_MESSAGES = 20;
 const MAX_CHARS = 1000;
@@ -31,10 +32,15 @@ export async function POST(req: NextRequest) {
     .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_CHARS) }));
   if (messages.at(-1)?.role !== "user") return NextResponse.json({ error: "bad request" }, { status: 400 });
 
+  const question = messages.at(-1)!.text;
+  const started = Date.now();
   try {
-    return NextResponse.json({ reply: await askGemini(messages) });
+    const reply = await askGemini(messages);
+    after(() => logAssistantMessage({ channel: "web", senderKey: ip, question, reply, fallback: false, latencyMs: Date.now() - started }));
+    return NextResponse.json({ reply });
   } catch (err) {
     console.error("[chat]", err);
+    after(() => logAssistantMessage({ channel: "web", senderKey: ip, question, reply: null, fallback: true, latencyMs: Date.now() - started }));
     return NextResponse.json({ error: "upstream" }, { status: 502 });
   }
 }

@@ -1,6 +1,8 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { askGemini, type ChatMessage } from "./chat";
+import { logAssistantMessage } from "./assistant-log";
+import { handleSignupMessage } from "./instagram-signup";
 import { site } from "./site";
 
 const appSecret = process.env.INSTAGRAM_APP_SECRET ?? "";
@@ -142,6 +144,20 @@ async function handleEvent(accountId: string | undefined, ev: IgMessagingEvent) 
     return;
   }
 
+  // Correo para crear cuenta con cupón (y su confirmación): lo responde el registro, no el asistente.
+  let signupReply: string | null = null;
+  try {
+    signupReply = await handleSignupMessage(sender, text);
+  } catch (err) {
+    console.error("[instagram] registro con cupón falló:", err);
+  }
+  if (signupReply) {
+    remember(sender, { role: "user", text: text.replace(/[^\s@]+@[^\s@]+/g, "[correo]").slice(0, 1000) });
+    remember(sender, { role: "assistant", text: signupReply });
+    await sendDm(sender, signupReply);
+    return;
+  }
+
   remember(sender, { role: "user", text: text.slice(0, 1000) });
   let reply = FALLBACK;
   const started = Date.now();
@@ -153,6 +169,14 @@ async function handleEvent(accountId: string | undefined, ev: IgMessagingEvent) 
     console.error(`[instagram] Gemini falló tras ${Date.now() - started} ms:`, err);
   }
   await sendDm(sender, reply);
+  await logAssistantMessage({
+    channel: "instagram",
+    senderKey: sender,
+    question: text,
+    reply,
+    fallback: reply === FALLBACK,
+    latencyMs: Date.now() - started,
+  });
 }
 
 export async function handleInstagramPayload(payload: IgPayload) {

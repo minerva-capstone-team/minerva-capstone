@@ -4,16 +4,51 @@ import { getBrowserSupabase } from "./supabase/client";
 import type { CheckoutQuote } from "./types";
 
 /** Vista previa de cupón + envío + total. El servidor lo recalcula de nuevo al crear el pedido. */
-export async function quoteCheckout(subtotal: number, region: string, coupon: string): Promise<CheckoutQuote | null> {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Líneas del carro para cupones por producto (precio × cantidad de cada ítem). */
+export const quoteLines = (items: { productId: string; unitPrice: number; quantity: number }[]) =>
+  items.map((i) => ({ product_id: UUID.test(i.productId) ? i.productId : "", amount: i.unitPrice * i.quantity }));
+
+export async function quoteCheckout(
+  subtotal: number,
+  region: string,
+  coupon: string,
+  lines?: ReturnType<typeof quoteLines>,
+  email?: string,
+): Promise<CheckoutQuote | null> {
   const sb = getBrowserSupabase();
   if (!sb) return null;
   const { data, error } = await sb.rpc("quote_checkout", {
     p_subtotal: subtotal,
     p_region: region,
     p_coupon: coupon.trim() || null,
+    p_lines: lines ?? null,
+    p_email: email?.trim() || null,
   });
   if (error || !data) return null;
   return data as CheckoutQuote;
+}
+
+export interface MyCoupon {
+  code: string;
+  kind: "percent" | "fixed";
+  value: number;
+  min_subtotal: number;
+  expires_at: string | null;
+  product_id: string | null;
+  product_name: string | null;
+  product_slug: string | null;
+}
+
+/** Cupones personales vigentes de la clienta con sesión iniciada (vacío si no hay sesión o falta 0007). */
+export async function myCoupons(): Promise<MyCoupon[]> {
+  const sb = getBrowserSupabase();
+  if (!sb) return [];
+  const { data: s } = await sb.auth.getSession();
+  if (!s.session) return [];
+  const { data, error } = await sb.rpc("my_coupons");
+  return error || !Array.isArray(data) ? [] : (data as MyCoupon[]);
 }
 
 /** Monto desde el cual el envío es gratis (null = no hay promoción). */

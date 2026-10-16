@@ -21,6 +21,8 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
    - `supabase/migrations/0003_order_tracking.sql` — código de Paket y función `track_order` para la página `/seguimiento`.
    - `supabase/migrations/0004_stock_cupones_envio_documentos.sql` — stock confiable (reservas que vencen, cancelar repone, variantes), cupones, tarifas de envío por región, envío gratis y datos de boleta/factura.
    - `supabase/migrations/0005_push_notifications.sql` — avisos push de pedidos nuevos a la app del admin.
+   - `supabase/migrations/0006_asistente_diseno_regalo.sql` — registro de preguntas al asistente (/admin/instagram), aprobación de diseño y regalo con mensaje secreto. **Si alguna vez vuelves a ejecutar 0004, ejecuta 0006 de nuevo después** (0006 reemplaza `create_order` y `track_order`).
+   - `supabase/migrations/0007_cupones_instagram.sql` — cupones personales y por producto, y cuentas con cupón creadas desde los DMs de Instagram (necesita `SUPABASE_SERVICE_ROLE_KEY` y un dominio verificado en Resend). Si vuelves a ejecutar 0004 o 0006, ejecuta 0007 después.
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
    ```env

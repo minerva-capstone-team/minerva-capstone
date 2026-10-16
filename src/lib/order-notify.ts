@@ -2,13 +2,15 @@ import { site } from "./site";
 import { PAKET_TRACKING_URL } from "./tracking";
 import type { DeliveryStatus, OrderStatus } from "./types";
 
-export type NotifyKind = "status" | "shipping";
+export type NotifyKind = "status" | "shipping" | "proof";
 
 export interface NotifyOrder {
   order_number: string;
   status: OrderStatus;
   delivery_status: DeliveryStatus;
   tracking_code: string | null;
+  /** Hay una prueba de diseño esperando la respuesta de la clienta. */
+  proof_pending?: boolean;
 }
 
 export interface OrderNotice {
@@ -22,6 +24,14 @@ export interface OrderNotice {
 /** Mensaje para el cliente según el estado actual del pedido. null = no corresponde avisar. */
 export function noticeFor(kind: NotifyKind, o: NotifyOrder): OrderNotice | null {
   const n = o.order_number;
+  if (kind === "proof") {
+    if (!o.proof_pending) return null;
+    return {
+      subject: `Revisa el diseño de tu pedido ${n} · ${site.name}`,
+      headline: "Tu diseño está listo para revisar",
+      body: `Preparamos una prueba del diseño personalizado de tu pedido ${n}. Revísala con calma (nombres, fechas, ortografía y foto) y apruébala o pídenos cambios desde el seguimiento. Solo empezamos a estampar cuando la apruebes.`,
+    };
+  }
   if (kind === "shipping") {
     if (o.delivery_status !== "enviado" || !o.tracking_code) return null;
     return {

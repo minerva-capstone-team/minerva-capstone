@@ -93,6 +93,11 @@ export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
             <dd>{order.document_type === "factura" ? "Factura" : "Boleta"}</dd>
           </div>
         </dl>
+        {order.gift && (
+          <p className="mt-4 rounded-2xl bg-m-magenta/10 p-4 text-sm text-ink-2">
+            Incluiremos en el paquete una tarjeta con un código QR para que quien reciba el regalo lea tu mensaje secreto.
+          </p>
+        )}
         <p className="mt-4 text-sm text-ink-soft">
           Entrega: {order.customer.address}, {order.customer.comuna}, {order.customer.region}
         </p>

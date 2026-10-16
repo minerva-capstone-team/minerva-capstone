@@ -11,16 +11,37 @@ import { Logo } from "@/components/layout/Logo";
 import { AuthForm } from "@/components/account/AuthForm";
 import { InstallAppButton, PushToggle, useRegisterAdminSw } from "@/components/admin/AdminPwa";
 
-const NAV: { href: string; label: string; icon: IconName }[] = [
-  { href: "/admin", label: "Resumen", icon: "home" },
-  { href: "/admin/pedidos", label: "Pedidos", icon: "receipt" },
-  { href: "/admin/productos", label: "Productos", icon: "tag" },
-  { href: "/admin/categorias", label: "Categorías", icon: "grid" },
-  { href: "/admin/cupones", label: "Cupones", icon: "sparkle" },
-  { href: "/admin/envios", label: "Envíos", icon: "truck" },
+const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: IconName }[] }[] = [
+  {
+    title: "Operación",
+    items: [
+      { href: "/admin", label: "Resumen", icon: "home" },
+      { href: "/admin/pedidos", label: "Pedidos", icon: "receipt" },
+      { href: "/admin/produccion", label: "Producción", icon: "board" },
+      { href: "/admin/taller", label: "Hoja de taller", icon: "printer" },
+    ],
+  },
+  {
+    title: "Catálogo",
+    items: [
+      { href: "/admin/productos", label: "Productos", icon: "tag" },
+      { href: "/admin/categorias", label: "Categorías", icon: "grid" },
+      { href: "/admin/cupones", label: "Cupones", icon: "sparkle" },
+      { href: "/admin/envios", label: "Envíos", icon: "truck" },
+    ],
+  },
+  {
+    title: "Análisis",
+    items: [
+      { href: "/admin/metricas", label: "Métricas", icon: "chart" },
+      { href: "/admin/instagram", label: "Lo que preguntan", icon: "chat" },
+      { href: "/admin/calendario", label: "Calendario", icon: "calendar" },
+    ],
+  },
 ];
-/** En el celular la barra inferior muestra estas y el resto queda en "Más". */
-const TAB_COUNT = 3;
+const NAV = NAV_GROUPS.flatMap((g) => g.items);
+/** Pestañas fijas de la barra inferior en el celular; el resto queda en "Más". */
+const TABS = ["/admin", "/admin/pedidos", "/admin/produccion"];
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -109,10 +130,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr] print:block">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-line bg-white p-4 transition-transform duration-500 ease-[var(--ease-out-expo)] lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 print:hidden flex-col border-r border-line bg-white p-4 transition-transform duration-500 ease-[var(--ease-out-expo)] lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0",
           menuOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -120,20 +141,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Logo size={44} />
           <span className="rounded-full bg-paper-2 px-2.5 py-1 text-xs font-semibold text-ink-soft">Admin</span>
         </div>
-        <nav className="mt-8 flex-1" aria-label="Administración">
-          <ul className="space-y-1">
-            {NAV.map((n) => (
-              <li key={n.href}>
-                <Link
-                  href={n.href}
-                  aria-current={isActive(n.href) ? "page" : undefined}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 transition-colors hover:bg-paper aria-[current=page]:bg-ink aria-[current=page]:text-white"
-                >
-                  <Icon name={n.icon} size={18} /> {n.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <nav className="mt-6 flex-1 overflow-y-auto" aria-label="Administración">
+          {NAV_GROUPS.map((g) => (
+            <div key={g.title} className="mb-5">
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{g.title}</p>
+              <ul className="space-y-1">
+                {g.items.map((n) => (
+                  <li key={n.href}>
+                    <Link
+                      href={n.href}
+                      aria-current={isActive(n.href) ? "page" : undefined}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 transition-colors hover:bg-paper aria-[current=page]:bg-ink aria-[current=page]:text-white"
+                    >
+                      <Icon name={n.icon} size={18} /> {n.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
         <div className="space-y-1 border-t border-line pt-4 pb-[env(safe-area-inset-bottom)]">
           <PushToggle className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper disabled:opacity-50" />
@@ -150,21 +176,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {menuOpen && <div className="fixed inset-0 z-30 bg-ink/30 lg:hidden" onClick={() => setMenuOpen(false)} aria-hidden />}
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-paper/85 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex print:hidden items-center gap-3 border-b border-line bg-paper/85 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur lg:hidden">
           <button type="button" className="grid size-11 place-items-center rounded-full hover:bg-ink/5" onClick={() => setMenuOpen(true)} aria-label="Abrir menú de administración">
             <Icon name="menu" />
           </button>
           <span className="font-semibold">Minerva Admin</span>
         </header>
-        <main className="mx-auto max-w-6xl px-4 pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 lg:py-12">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pt-8 print:max-w-none print:p-0 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 lg:py-12">{children}</main>
       </div>
 
       <nav
         aria-label="Secciones"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 border-t print:hidden border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         <ul className="grid grid-cols-4">
-          {NAV.slice(0, TAB_COUNT).map((n) => (
+          {NAV.filter((n) => TABS.includes(n.href)).map((n) => (
             <li key={n.href}>
               <Link
                 href={n.href}
@@ -180,7 +206,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
-              aria-current={NAV.slice(TAB_COUNT).some((n) => isActive(n.href)) ? "page" : undefined}
+              aria-current={NAV.filter((n) => !TABS.includes(n.href)).some((n) => isActive(n.href)) ? "page" : undefined}
               className="flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-ink-soft aria-[current=page]:text-ink"
             >
               <Icon name="menu" size={22} />

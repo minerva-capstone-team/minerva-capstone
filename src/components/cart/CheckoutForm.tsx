@@ -6,7 +6,7 @@ import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
 import { REGIONS } from "@/lib/regions";
 import { placeOrder } from "@/lib/orders";
-import { formatRut, isValidRut, quoteCheckout } from "@/lib/checkout";
+import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { paymentProviders, type PaymentMethodId } from "@/lib/payments";
 import type { BillingData, CheckoutCustomer, CheckoutQuote, DocumentType } from "@/lib/types";
@@ -56,6 +56,8 @@ export function CheckoutForm() {
   const [coupon, setCoupon] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [documentType, setDocumentType] = useState<DocumentType>("boleta");
+  const [isGift, setIsGift] = useState(false);
+  const [gift, setGift] = useState({ message: "", from: "" });
   const [billing, setBilling] = useState<BillingData>(EMPTY_BILLING);
   const [billingErrors, setBillingErrors] = useState<BillingErrors>({});
 
@@ -83,19 +85,39 @@ export function CheckoutForm() {
   }, [data, hydrated]);
 
   const total = cartTotal(items);
+  const linesKey = JSON.stringify(quoteLines(items));
+
+  // Si la clienta tiene un cupón personal (p. ej. el de Instagram) que calza con su carro, se aplica solo.
+  useEffect(() => {
+    if (!hydrated || !isSupabaseConfigured || coupon) return;
+    let alive = true;
+    myCoupons().then((list) => {
+      if (!alive || !list.length) return;
+      const ids = new Set(items.map((i) => i.productId));
+      const fit = list.find((c) => c.product_id && ids.has(c.product_id)) ?? list.find((c) => !c.product_id);
+      if (fit) {
+        setCouponInput(fit.code);
+        setCoupon(fit.code);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, linesKey]);
 
   // Cupón + envío + total calculados por la base de datos (el pedido los vuelve a calcular al confirmar).
   useEffect(() => {
     if (!hydrated || !isSupabaseConfigured || total <= 0) return;
     let alive = true;
     const t = setTimeout(() => {
-      quoteCheckout(total, data.region, coupon).then((q) => alive && setQuote(q));
+      quoteCheckout(total, data.region, coupon, JSON.parse(linesKey), data.email).then((q) => alive && setQuote(q));
     }, 250);
     return () => {
       alive = false;
       clearTimeout(t);
     };
-  }, [hydrated, total, data.region, coupon]);
+  }, [hydrated, total, linesKey, data.region, data.email, coupon]);
 
   const couponRejected = Boolean(coupon) && quote?.coupon_valid === false;
   const discount = quote?.discount ?? 0;
@@ -137,6 +159,7 @@ export function CheckoutForm() {
         coupon: quote?.coupon_valid ? coupon : "",
         documentType,
         billing: documentType === "factura" ? billing : null,
+        gift: isGift && gift.message.trim() ? gift : null,
       });
       const provider = paymentProviders.find((p) => p.id === method)!;
       setPlaced(true);
@@ -247,6 +270,42 @@ export function CheckoutForm() {
               />
             </div>
           </div>
+        </fieldset>
+
+        <fieldset className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
+          <legend className="sr-only">Regalo</legend>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" className="mt-1.5 size-4 accent-[var(--color-ink)]" checked={isGift} onChange={(e) => setIsGift(e.target.checked)} />
+            <span>
+              <span className="display block text-2xl">¿Es un regalo?</span>
+              <span className="mt-1 block text-sm text-ink-soft">Escribe un mensaje secreto: lo imprimimos como una tarjeta con código QR dentro del paquete, y quien lo reciba lo lee desde su celular.</span>
+            </span>
+          </label>
+          {isGift && (
+            <div className="mt-5 grid gap-5">
+              <div>
+                <label htmlFor="co-gift-message" className="label">
+                  Mensaje secreto
+                </label>
+                <textarea
+                  id="co-gift-message"
+                  className="field resize-none"
+                  rows={4}
+                  maxLength={500}
+                  value={gift.message}
+                  onChange={(e) => setGift((g) => ({ ...g, message: e.target.value }))}
+                  placeholder="Feliz cumpleaños, mamá. Gracias por todo…"
+                />
+                <p className="mt-1 text-right text-xs text-ink-soft">{gift.message.length}/500</p>
+              </div>
+              <div>
+                <label htmlFor="co-gift-from" className="label">
+                  De parte de <span className="font-normal text-ink-soft">(opcional)</span>
+                </label>
+                <input id="co-gift-from" className="field" maxLength={80} value={gift.from} onChange={(e) => setGift((g) => ({ ...g, from: e.target.value }))} placeholder="Tu nombre o un apodo" />
+              </div>
+            </div>
+          )}
         </fieldset>
 
         <fieldset className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
