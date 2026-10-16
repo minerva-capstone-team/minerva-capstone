@@ -330,3 +330,15 @@ end $$;
 
 revoke all on function public.create_order(jsonb) from public;
 grant execute on function public.create_order(jsonb) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Permisos del servidor (clave de servicio): registro de preguntas y cuentas desde Instagram
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant usage on schema public to service_role;
+    grant select, insert, update, delete on public.instagram_signups, public.assistant_messages, public.coupons to service_role;
+    grant select on public.products to service_role;
+  end if;
+end $$;

@@ -66,7 +66,10 @@ async function productById(id: string | null) {
  * responda el asistente normal.
  */
 export async function handleSignupMessage(sender: string, text: string): Promise<string | null> {
-  if (!canRunSignup()) return null;
+  if (!canRunSignup()) {
+    if (EMAIL_RE.test(text)) console.warn("[ig-signup] desactivado: falta SUPABASE_SERVICE_ROLE_KEY o RESEND_FROM con dominio verificado");
+    return null;
+  }
   const sb = getServiceSupabase()!;
   const senderHash = anonymize(sender);
   const email = text.match(EMAIL_RE)?.[0]?.toLowerCase().slice(0, 160);
