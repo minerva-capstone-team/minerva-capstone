@@ -39,6 +39,11 @@ export function ProductCard({ product, priority, className }: { product: Product
               {badgeLabel[product.badge]}
             </span>
           )}
+          {product.promo && (
+            <span className={cn("rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wider", product.promo.kind === "stock" ? "bg-m-orange text-white" : "bg-gradient-minerva text-white")}>
+              {product.promo.label}
+            </span>
+          )}
           {onSale && (
             <span className="rounded-full bg-m-red px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-white">
               -{Math.round((1 - product.price / product.compare_at_price!) * 100)}%

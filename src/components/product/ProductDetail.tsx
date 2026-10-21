@@ -174,6 +174,25 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
             <span className="text-sm text-ink-soft">CLP</span>
           </div>
+          {product.promo && (
+            <p className={cn("mt-4 flex items-start gap-2 rounded-2xl p-3 text-sm", product.promo.kind === "stock" ? "bg-m-orange/12 text-[#9a4a12]" : "bg-m-violet/10 text-m-violet")}>
+              <Icon name="sparkle" size={18} className="mt-0.5 shrink-0" />
+              <span>
+                {product.promo.kind === "stock" ? (
+                  <>
+                    <strong>Últimas {product.stock} {product.stock === 1 ? "unidad" : "unidades"}</strong>
+                    {product.promo.percent > 0 && ` con ${product.promo.percent}% de descuento`}. Cuando se repone, vuelve a su precio normal.
+                  </>
+                ) : (
+                  <>
+                    <strong>Especial {product.promo.label}</strong>
+                    {product.promo.percent > 0 && `: ${product.promo.percent}% de descuento`}
+                    {product.promo.ends_at && ` hasta el ${new Date(product.promo.ends_at).toLocaleDateString("es-CL", { day: "numeric", month: "long", timeZone: "America/Santiago" })}`}.
+                  </>
+                )}
+              </span>
+            </p>
+          )}
           <p className="mt-5 text-lg leading-relaxed text-ink-2">{product.description}</p>
 
           <ul className="mt-6 grid grid-cols-2 gap-3 text-sm">

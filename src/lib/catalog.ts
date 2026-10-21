@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { demoCategories, demoProducts } from "./demo-data";
 import { getServerSupabase } from "./supabase/server";
-import { normalizeProduct, PRODUCT_SELECT } from "./product-utils";
+import { normalizeProduct, PRODUCT_SELECT, STORE_PRODUCT_SELECT } from "./product-utils";
 import type { Category, Product } from "./types";
 
 export const getCategories = cache(async (): Promise<Category[]> => {
@@ -19,16 +19,15 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 export const getProducts = cache(async (): Promise<Product[]> => {
   const sb = getServerSupabase();
   if (!sb) return demoProducts;
-  const { data, error } = await sb
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("active", true)
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("[catalog] products", error.message);
+  const query = (select: string) => sb.from("products").select(select).eq("active", true).order("created_at", { ascending: false });
+  let { data, error } = await query(STORE_PRODUCT_SELECT);
+  // Sin la migración 0010 no existe promo_info: se muestra el catálogo sin promociones.
+  if (error && /promo_info/.test(error.message)) ({ data, error } = await query(PRODUCT_SELECT));
+  if (error || !data) {
+    console.error("[catalog] products", error?.message);
     return [];
   }
-  return data.map(normalizeProduct);
+  return (data as unknown as Record<string, unknown>[]).map(normalizeProduct);
 });
 
 export const getProduct = cache(async (slug: string): Promise<Product | null> => {
