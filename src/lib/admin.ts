@@ -35,6 +35,27 @@ export async function notifyCustomer(orderId: string, kind: NotifyKind): Promise
   }
 }
 
+export type SignupDecision = { ok: true; couponCode?: string; newAccount?: boolean } | { ok: false; error: string };
+
+/** Acepta o rechaza una solicitud de cuenta de Instagram (el servidor crea la cuenta, el cupón y envía el correo). */
+export async function decideSignup(id: string, action: "approve" | "reject"): Promise<SignupDecision> {
+  const { data } = await adminDb().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, error: "Tu sesión expiró. Vuelve a entrar." };
+  try {
+    const res = await fetch("/api/admin/instagram-signups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, action }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; couponCode?: string; newAccount?: boolean };
+    if (res.ok && body.ok) return { ok: true, couponCode: body.couponCode, newAccount: body.newAccount };
+    return { ok: false, error: body.error && body.error !== "forbidden" ? body.error : "No se pudo completar la acción." };
+  } catch {
+    return { ok: false, error: "Sin conexión con el servidor." };
+  }
+}
+
 export async function uploadPublicImage(file: File, folder: string) {
   if (!file.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen.");
   if (file.size > 5 * 1024 * 1024) throw new Error("La imagen supera los 5 MB. Redúcela antes de subirla.");

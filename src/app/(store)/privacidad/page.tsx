@@ -62,7 +62,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Si nos das tu correo por Instagram para recibir un cupón:</strong> tu correo, para crear tu cuenta y enviarte el acceso y el cupón. Solo lo hacemos si lo
-              confirmas respondiendo «sí»; no lo usamos para enviarte publicidad.
+              confirmas respondiendo «sí» y nuestro equipo aprueba la solicitud; no lo usamos para enviarte publicidad.
             </li>
             <li>
               <strong>Si compras un regalo:</strong> el mensaje y la firma que escribes para la tarjeta. Solo los puede leer quien tenga el código QR de la tarjeta.

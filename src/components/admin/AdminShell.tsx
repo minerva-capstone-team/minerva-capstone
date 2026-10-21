@@ -19,6 +19,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: I
       { href: "/admin/pedidos", label: "Pedidos", icon: "receipt" },
       { href: "/admin/produccion", label: "Producción", icon: "board" },
       { href: "/admin/taller", label: "Hoja de taller", icon: "printer" },
+      { href: "/admin/cuentas-instagram", label: "Cuentas de Instagram", icon: "user" },
     ],
   },
   {
@@ -81,6 +82,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | undefined>(undefined);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingAccounts, setPendingAccounts] = useState(0);
   useRegisterAdminSw();
 
   useEffect(() => {
@@ -94,6 +96,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  // Solicitudes de cuenta de Instagram esperando respuesta (se ve como globo en el menú).
+  useEffect(() => {
+    if (!isAdmin) return;
+    getBrowserSupabase()!
+      .from("instagram_signups")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "por_aprobar")
+      .then(({ count, error }) => setPendingAccounts(error ? 0 : (count ?? 0)));
+  }, [isAdmin, pathname]);
 
   if (!isSupabaseConfigured) return <SetupNotice />;
   if (session === undefined || (session && isAdmin === undefined)) {
@@ -154,6 +166,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-2 transition-colors hover:bg-paper aria-[current=page]:bg-ink aria-[current=page]:text-white"
                     >
                       <Icon name={n.icon} size={18} /> {n.label}
+                      {n.href === "/admin/cuentas-instagram" && pendingAccounts > 0 && (
+                        <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-m-red px-1.5 text-[11px] font-semibold leading-5 text-white" aria-label={`${pendingAccounts} por revisar`}>
+                          {pendingAccounts}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}
@@ -209,7 +226,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               aria-current={NAV.filter((n) => !TABS.includes(n.href)).some((n) => isActive(n.href)) ? "page" : undefined}
               className="flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-ink-soft aria-[current=page]:text-ink"
             >
-              <Icon name="menu" size={22} />
+              <span className="relative">
+                <Icon name="menu" size={22} />
+                {pendingAccounts > 0 && <span aria-hidden className="absolute -right-1 -top-0.5 size-2.5 rounded-full bg-m-red" />}
+              </span>
               Más
             </button>
           </li>

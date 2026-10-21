@@ -76,6 +76,11 @@ export async function handleSignupMessage(sender: string, text: string): Promise
 
   const { data: row } = await sb.from("instagram_signups").select("*").eq("sender_hash", senderHash).maybeSingle();
 
+  if (row?.status === "por_aprobar") {
+    return "Tu solicitud ya está en revisión 💛 Apenas la aprobemos te llega un correo con tu acceso y tu cupón.";
+  }
+  if (row?.status === "rechazada") return null;
+
   if (row?.status === "creada") {
     // Ya tiene su cupón: solo respondemos si vuelve a mandar un correo.
     return email ? `Ya te enviamos tu cupón al correo ${row.email} 💛 Si no lo encuentras, revisa spam o promociones.` : null;
@@ -93,7 +98,7 @@ export async function handleSignupMessage(sender: string, text: string): Promise
       return null;
     }
     const gift = product ? `un ${SIGNUP_PERCENT}% de descuento en ${product.name}` : `un ${SIGNUP_PERCENT}% de descuento en tu primera compra`;
-    return `¡Gracias! ¿Quieres que te creemos una cuenta en ${site.name} con ${email}? Te llegará al correo tu acceso y ${gift} (válido ${COUPON_DAYS} días). Responde SÍ para confirmar.`;
+    return `¡Gracias! ¿Quieres solicitar una cuenta en ${site.name} con ${email}? Si la aprobamos, te llegará al correo tu acceso y ${gift} (válido ${COUPON_DAYS} días). Responde SÍ para enviar tu solicitud.`;
   }
 
   if (row?.status !== "pendiente") return null;
@@ -105,13 +110,32 @@ export async function handleSignupMessage(sender: string, text: string): Promise
   }
   if (!YES_RE.test(text)) return null;
 
-  return createAccount(row.id, row.email, await productById(row.product_id));
+  // Confirmó: queda esperando que el equipo la apruebe en el panel (no se crea nada todavía).
+  const { error: queueErr } = await sb.from("instagram_signups").update({ status: "por_aprobar", requested_at: new Date().toISOString() }).eq("id", row.id);
+  if (queueErr) {
+    console.error("[ig-signup] no se pudo dejar por aprobar (¿falta la migración 0008?):", queueErr.message);
+    return "Uy, no pudimos registrar tu solicitud ahora 🙈 Inténtalo de nuevo en un rato o escríbenos por WhatsApp.";
+  }
+  console.info("[ig-signup] solicitud por aprobar");
+  return "¡Gracias! 🎉 Recibimos tu solicitud. Nuestro equipo la revisa y, cuando la aprobemos, te llega un correo con tu acceso y tu cupón de bienvenida.";
 }
 
-async function createAccount(signupId: string, email: string, product: { id: string; name: string; slug: string } | null) {
+export type ApproveResult = { ok: true; couponCode: string; newAccount: boolean } | { ok: false; error: string };
+
+/** Acepta una solicitud: crea (o reutiliza) la cuenta, el cupón personal y envía el correo. */
+export async function approveSignup(signupId: string): Promise<ApproveResult> {
+  if (!canRunSignup()) return { ok: false, error: "Falta SUPABASE_SERVICE_ROLE_KEY o un remitente de Resend con dominio verificado." };
   const sb = getServiceSupabase()!;
+  const { data: row } = await sb.from("instagram_signups").select("id,email,product_id,status").eq("id", signupId).maybeSingle();
+  if (!row) return { ok: false, error: "No encontramos esa solicitud." };
+  if (row.status === "creada") return { ok: false, error: "Esta solicitud ya fue aprobada." };
+  if (row.status !== "por_aprobar") return { ok: false, error: "Esta solicitud no está esperando aprobación." };
+  const { data: dup } = await sb.from("instagram_signups").select("id").eq("email", row.email).eq("status", "creada").maybeSingle();
+  if (dup) return { ok: false, error: "Ese correo ya recibió su cuenta y cupón antes." };
+
+  const product = await productById(row.product_id);
+  const email = row.email as string;
   const expiresAt = new Date(Date.now() + COUPON_DAYS * 86_400_000);
-  const fail = "Uy, no pudimos crear tu cuenta ahora 🙈 Inténtalo de nuevo en un rato respondiendo SÍ, o escríbenos por WhatsApp.";
 
   // 1) Cupón personal (código único: reintenta si choca).
   let code = "";
@@ -130,10 +154,10 @@ async function createAccount(signupId: string, email: string, product: { id: str
     if (!error) code = candidate;
     else if (!/duplicate|unique/i.test(error.message)) {
       console.error("[ig-signup] cupón:", error.message);
-      return fail;
+      return { ok: false, error: "No se pudo crear el cupón." };
     }
   }
-  if (!code) return fail;
+  if (!code) return { ok: false, error: "No se pudo generar un código de cupón. Inténtalo de nuevo." };
 
   // 2) Cuenta. Si el correo ya existe no tocamos su contraseña.
   const password = tempPassword();
@@ -147,11 +171,11 @@ async function createAccount(signupId: string, email: string, product: { id: str
   if (userErr && !/already|exists|registered/i.test(userErr.message)) {
     console.error("[ig-signup] cuenta:", userErr.message);
     await sb.from("coupons").delete().eq("code", code);
-    return fail;
+    return { ok: false, error: "No se pudo crear la cuenta." };
   }
   if (created?.user) newUserId = created.user.id;
 
-  // 3) Correo con el acceso y el cupón.
+  // 3) Correo con el acceso y el cupón. Si falla se deshace todo y la solicitud sigue por aprobar.
   const { error: mailErr } = await sendWelcomeEmail(email, {
     password: newUserId ? password : null,
     couponCode: code,
@@ -163,17 +187,26 @@ async function createAccount(signupId: string, email: string, product: { id: str
     console.error("[ig-signup] correo:", mailErr);
     await sb.from("coupons").delete().eq("code", code);
     if (newUserId) await sb.auth.admin.deleteUser(newUserId);
-    return "No pudimos enviarte el correo 🙈 Revisa que esté bien escrito y mándalo de nuevo.";
+    return { ok: false, error: "No se pudo enviar el correo (revisa que esté bien escrito y que Resend esté configurado)." };
   }
 
   await sb
     .from("instagram_signups")
-    .update({ status: "creada", coupon_code: code, new_account: Boolean(newUserId), confirmed_at: new Date().toISOString() })
+    .update({ status: "creada", coupon_code: code, new_account: Boolean(newUserId), confirmed_at: new Date().toISOString(), decided_at: new Date().toISOString() })
     .eq("id", signupId);
-  console.info(`[ig-signup] cuenta ${newUserId ? "nueva" : "existente"} + cupón ${code}`);
+  console.info(`[ig-signup] aprobada: cuenta ${newUserId ? "nueva" : "existente"} + cupón ${code}`);
+  return { ok: true, couponCode: code, newAccount: Boolean(newUserId) };
+}
 
-  const where = product ? ` para ${product.name}` : "";
-  return newUserId
-    ? `¡Listo! 🎉 Te enviamos a ${email} tu contraseña temporal y tu cupón ${code}${where}. Entra en ${site.url}/cuenta y el descuento se aplica solo al pagar. (Si no ves el correo, revisa spam.)`
-    : `¡Listo! 🎉 Ya tenías cuenta con ${email}, así que dejamos ahí tu cupón ${code}${where}. Te enviamos los detalles por correo.`;
+/** Rechaza una solicitud: no se crea nada ni se envía correo. */
+export async function rejectSignup(signupId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isServiceConfigured) return { ok: false, error: "Falta SUPABASE_SERVICE_ROLE_KEY." };
+  const { data, error } = await getServiceSupabase()!
+    .from("instagram_signups")
+    .update({ status: "rechazada", decided_at: new Date().toISOString() })
+    .eq("id", signupId)
+    .eq("status", "por_aprobar")
+    .select("id");
+  if (error) return { ok: false, error: "No se pudo rechazar." };
+  return data?.length ? { ok: true } : { ok: false, error: "Esta solicitud ya no está esperando aprobación." };
 }
