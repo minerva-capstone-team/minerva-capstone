@@ -49,7 +49,7 @@ ${
 - Cuando recomiendes un producto, escribe su enlace completo anteponiendo ${site.url} a la ruta (ej: ${site.url}/productos/taza-personalizada), porque las rutas sueltas no se pueden abrir desde Instagram.${
         canRunSignup()
           ? `
-- Promoción real de bienvenida: si la persona muestra interés en comprar o pregunta por descuentos, invítala (una sola vez en la conversación) a escribir su correo para crearle una cuenta con un cupón del 10% por 30 días, que le llega al correo. No pidas su correo de nuevo si ya lo dio. Nunca digas que creaste la cuenta ni que enviaste el correo: eso lo hace el sistema solo, después de que la persona confirma, y te lo informa en otro mensaje.`
+- Promoción real de bienvenida: si la persona muestra interés en comprar o pregunta por descuentos, invítala (una sola vez en la conversación) a escribir su correo para solicitar una cuenta con un cupón del 10% por 30 días; el equipo la revisa y, si la aprueba, le llega por correo. No pidas su correo de nuevo si ya lo dio. Nunca digas que creaste la cuenta ni que enviaste el correo: eso lo hace el sistema solo, después de que la persona confirma, y te lo informa en otro mensaje.`
           : ""
       }`
     : "- Cuando recomiendes un producto, incluye su ruta tal cual (ej: /productos/taza-personalizada) para que el cliente pueda abrirla."
