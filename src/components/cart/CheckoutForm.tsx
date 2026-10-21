@@ -8,6 +8,8 @@ import { REGIONS } from "@/lib/regions";
 import { placeOrder } from "@/lib/orders";
 import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { clearCoupon, readCoupon } from "@/lib/coupon-link";
+import { useSession } from "@/lib/use-session";
 import { paymentProviders, type PaymentMethodId } from "@/lib/payments";
 import type { BillingData, CheckoutCustomer, CheckoutQuote, DocumentType } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
@@ -45,6 +47,7 @@ function validate(c: CheckoutCustomer): Errors {
 export function CheckoutForm() {
   const router = useRouter();
   const { items, clear } = useCart();
+  const session = useSession();
   const [hydrated, setHydrated] = useState(false);
   const [data, setData] = useState<CheckoutCustomer>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
@@ -87,9 +90,25 @@ export function CheckoutForm() {
   const total = cartTotal(items);
   const linesKey = JSON.stringify(quoteLines(items));
 
+  // Cupón que llegó por enlace (Instagram o correo): se aplica solo.
+  useEffect(() => {
+    if (!hydrated) return;
+    const saved = readCoupon();
+    if (saved) {
+      setCouponInput(saved);
+      setCoupon(saved);
+    }
+  }, [hydrated]);
+
+  // Con la sesión iniciada, el correo ya viene puesto (menos pasos para comprar).
+  useEffect(() => {
+    const email = session?.user.email;
+    if (email) setData((d) => (d.email ? d : { ...d, email }));
+  }, [session]);
+
   // Si la clienta tiene un cupón personal (p. ej. el de Instagram) que calza con su carro, se aplica solo.
   useEffect(() => {
-    if (!hydrated || !isSupabaseConfigured || coupon) return;
+    if (!hydrated || !isSupabaseConfigured || coupon || readCoupon()) return;
     let alive = true;
     myCoupons().then((list) => {
       if (!alive || !list.length) return;
@@ -163,6 +182,7 @@ export function CheckoutForm() {
       });
       const provider = paymentProviders.find((p) => p.id === method)!;
       setPlaced(true);
+      clearCoupon();
       if (method !== "whatsapp") {
         const url = await provider.start(order);
         clear();

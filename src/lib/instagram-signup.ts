@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { anonymize } from "./assistant-log";
 import { canEmailCustomers, sendWelcomeEmail } from "./email";
 import { getServiceSupabase, isServiceConfigured } from "./supabase/service";
+import { notifyAdmins, signupCard } from "./telegram";
 import { site } from "./site";
 
 /**
@@ -117,6 +118,10 @@ export async function handleSignupMessage(sender: string, text: string): Promise
     return "Uy, no pudimos registrar tu solicitud ahora 🙈 Inténtalo de nuevo en un rato o escríbenos por WhatsApp.";
   }
   console.info("[ig-signup] solicitud por aprobar");
+  // Aviso al equipo por Telegram, con botones para aceptar o rechazar sin abrir el panel.
+  const wanted = await productById(row.product_id);
+  const card = signupCard({ id: row.id, email: row.email, product: wanted?.name ?? null });
+  await notifyAdmins(card.html, card.buttons);
   return "¡Gracias! 🎉 Recibimos tu solicitud. Nuestro equipo la revisa y, cuando la aprobemos, te llega un correo con tu acceso y tu cupón de bienvenida.";
 }
 
@@ -181,6 +186,7 @@ export async function approveSignup(signupId: string): Promise<ApproveResult> {
     couponCode: code,
     percent: SIGNUP_PERCENT,
     productName: product?.name ?? null,
+    productSlug: product?.slug ?? null,
     expiresAt,
   });
   if (mailErr) {

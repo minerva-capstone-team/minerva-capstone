@@ -1,6 +1,8 @@
 "use client";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { captureCouponFromUrl, readCoupon } from "@/lib/coupon-link";
 import type { Customization, Product } from "@/lib/types";
 import { badgeLabel, cn, formatCLP, stockLabel } from "@/lib/format";
 import { downscaleImage } from "@/lib/images";
@@ -92,7 +94,13 @@ function Gallery({ product }: { product: Product }) {
 }
 
 export function ProductDetail({ product }: { product: Product }) {
+  const router = useRouter();
   const addToCart = useAddToCart();
+  const [savedCoupon, setSavedCoupon] = useState<string | null>(null);
+  useEffect(() => {
+    captureCouponFromUrl();
+    setSavedCoupon(readCoupon());
+  }, []);
   const inCart = useCart((s) => s.items.filter((i) => i.productId === product.id).reduce((n, i) => n + i.quantity, 0));
   const [variantId, setVariantId] = useState(product.variants.find((v) => v.stock !== 0)?.id ?? product.variants[0]?.id ?? null);
   const inCartVariant = useCart((s) => (variantId ? s.items.filter((i) => i.variantId === variantId).reduce((n, i) => n + i.quantity, 0) : 0));
@@ -137,6 +145,11 @@ export function ProductDetail({ product }: { product: Product }) {
       setTimeout(() => setJustAdded(false), 1800);
       setQuantity(1);
     }
+  };
+
+  // Comprar ahora: lo deja en el carro y va directo al checkout (sin abrir el carro).
+  const onBuyNow = () => {
+    if (addToCart(product, { variant, quantity, customization })) router.push("/checkout");
   };
 
   const extra = [variant && `Variante: ${variant.name}`, name.trim() && `Nombre: ${name.trim()}`, text.trim() && `Texto: "${text.trim()}"`].filter(Boolean).join("\n");
@@ -279,6 +292,15 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
+          {savedCoupon && (
+            <p className="mt-8 flex items-center gap-2 rounded-2xl bg-m-green/12 p-3 text-sm text-[#1c6b51]">
+              <Icon name="sparkle" size={18} className="shrink-0" />
+              <span>
+                Tu cupón <strong className="font-mono">{savedCoupon}</strong> está listo: se aplica solo al pagar.
+              </span>
+            </p>
+          )}
+
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={setQuantity} max={Math.max(1, available)} />
             <button type="button" onClick={onAdd} disabled={available <= 0} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
@@ -286,6 +308,9 @@ export function ProductDetail({ product }: { product: Product }) {
               {product.stock <= 0 || variant?.stock === 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
             </button>
           </div>
+          <button type="button" onClick={onBuyNow} disabled={available <= 0} className="btn btn-ghost mt-3 h-14 w-full text-base">
+            Comprar ahora
+          </button>
           <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-3 h-14 w-full text-base">
             <WhatsAppIcon /> Consultar por WhatsApp
           </a>
