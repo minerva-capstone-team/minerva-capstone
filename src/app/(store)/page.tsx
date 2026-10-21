@@ -10,6 +10,7 @@ import { Social } from "@/components/home/Social";
 import { About } from "@/components/home/About";
 import { Faq } from "@/components/home/Faq";
 import { Contact } from "@/components/home/Contact";
+import { SeasonSpotlight } from "@/components/home/SeasonSpotlight";
 
 export default async function HomePage() {
   const [products, categories] = await Promise.all([getProducts(), getCategories()]);
@@ -26,6 +27,7 @@ export default async function HomePage() {
       <Hero />
       <Marquee />
       <Categories categories={categories} counts={counts} />
+      <SeasonSpotlight products={products} />
       <ProductsSection products={products} />
       <HazloTuyo />
       <Editorial products={editorial} />

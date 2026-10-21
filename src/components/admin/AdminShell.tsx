@@ -28,6 +28,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: I
       { href: "/admin/productos", label: "Productos", icon: "tag" },
       { href: "/admin/categorias", label: "Categorías", icon: "grid" },
       { href: "/admin/cupones", label: "Cupones", icon: "sparkle" },
+      { href: "/admin/promociones", label: "Promociones", icon: "percent" },
       { href: "/admin/envios", label: "Envíos", icon: "truck" },
     ],
   },

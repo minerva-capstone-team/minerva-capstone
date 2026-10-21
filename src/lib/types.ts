@@ -43,6 +43,8 @@ export interface ProductVariant {
   position: number;
 }
 
+import type { ProductPromo } from "./promo";
+
 export interface Product {
   id: string;
   name: string;
@@ -63,6 +65,8 @@ export interface Product {
   images: ProductImage[];
   variants: ProductVariant[];
   created_at: string;
+  /** Promoción automática vigente (bajo stock o campaña). El precio ya viene con ella aplicada. */
+  promo?: ProductPromo | null;
 }
 
 /** Datos que el cliente ingresa para personalizar un producto. */

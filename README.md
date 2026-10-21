@@ -25,6 +25,7 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
    - `supabase/migrations/0007_cupones_instagram.sql` — cupones personales y por producto, y cuentas con cupón creadas desde los DMs de Instagram (necesita `SUPABASE_SERVICE_ROLE_KEY` y un dominio verificado en Resend). Si vuelves a ejecutar 0004 o 0006, ejecuta 0007 después.
    - `supabase/migrations/0008_aprobar_cuentas_instagram.sql` — las solicitudes de cuenta por DM quedan "por aprobar" y se aceptan o rechazan en `/admin/cuentas-instagram`.
    - `supabase/migrations/0009_telegram_permisos.sql` — permisos de lectura para el bot de Telegram.
+   - `supabase/migrations/0010_promociones_automaticas.sql` — liquidación automática por bajo stock y campañas por fecha especial (se ajustan en `/admin/promociones`). **Reemplaza `create_order`: si vuelves a ejecutar 0004, 0006 o 0007, ejecuta 0010 después.**
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
    ```env
