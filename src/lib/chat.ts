@@ -26,12 +26,13 @@ export type ChatChannel = "web" | "instagram";
 
 async function systemPrompt(channel: ChatChannel) {
   const products = await getProducts();
+  const linkBase = channel === "instagram" ? "/comprar/" : "/productos/";
   const catalog = products
     .map((p) => {
       const stock = p.stock <= 0 ? "agotado" : p.stock <= 5 ? `últimas ${p.stock} unidades` : "disponible";
       const variants = p.variants.length ? ` | variantes: ${p.variants.map((v) => v.name + (v.price_delta ? ` (+${formatCLP(v.price_delta)})` : "")).join(", ")}` : "";
       const desc = p.description.replace(/\s+/g, " ").slice(0, 220);
-      return `- ${p.name} | ${p.category?.name ?? "sin categoría"} | ${formatCLP(p.price)} | ${stock} | ${p.customizable ? "personalizable" : "no personalizable"} | preparación ${p.preparation_days} días hábiles${variants} | /productos/${p.slug} | ${desc}`;
+      return `- ${p.name} | ${p.category?.name ?? "sin categoría"} | ${formatCLP(p.price)} | ${stock} | ${p.customizable ? "personalizable" : "no personalizable"} | preparación ${p.preparation_days} días hábiles${variants} | ${linkBase}${p.slug} | ${desc}`;
     })
     .join("\n");
   const faq = faqs.map((f) => `P: ${f.q}\nR: ${f.a}`).join("\n\n");
@@ -46,7 +47,7 @@ Reglas:
 ${
   channel === "instagram"
     ? `- Estás conversando por mensajes directos de Instagram: responde en máximo 3 frases cortas (menos de 600 caracteres), sin listas largas.
-- Cuando recomiendes un producto, escribe su enlace completo anteponiendo ${site.url} a la ruta (ej: ${site.url}/productos/taza-personalizada), porque las rutas sueltas no se pueden abrir desde Instagram.${
+- Cuando recomiendes un producto, escribe su enlace completo anteponiendo ${site.url} a la ruta (ej: ${site.url}/comprar/taza-personalizada), porque las rutas sueltas no se pueden abrir desde Instagram. Ese enlace deja el producto en el carro y lleva directo a pagar (si es personalizable, lleva a elegir el diseño), así que di que con un clic ya pueden comprar.${
         canRunSignup()
           ? `
 - Promoción real de bienvenida: si la persona muestra interés en comprar o pregunta por descuentos, invítala (una sola vez en la conversación) a escribir su correo para solicitar una cuenta con un cupón del 10% por 30 días; el equipo la revisa y, si la aprueba, le llega por correo. No pidas su correo de nuevo si ya lo dio. Nunca digas que creaste la cuenta ni que enviaste el correo: eso lo hace el sistema solo, después de que la persona confirma, y te lo informa en otro mensaje.`

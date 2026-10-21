@@ -12,7 +12,7 @@ export function anonymize(senderKey: string) {
 
 /** Slugs de los productos que el asistente enlazó en su respuesta. */
 export function linkedProducts(reply: string | null) {
-  const slugs = (reply ?? "").match(/\/productos\/([a-z0-9-]+)/g) ?? [];
+  const slugs = (reply ?? "").match(/\/(?:productos|comprar)\/([a-z0-9-]+)/g) ?? [];
   return [...new Set(slugs.map((s) => s.split("/").pop()!))].slice(0, 10);
 }
 

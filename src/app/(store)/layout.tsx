@@ -9,6 +9,7 @@ import { Toaster } from "@/components/layout/Toaster";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
 import { ChatWidget } from "@/components/layout/ChatWidget";
 import { MotionProvider } from "@/components/layout/MotionProvider";
+import { CouponCapture } from "@/components/cart/CouponCapture";
 
 export const revalidate = 60;
 
@@ -43,6 +44,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <WhatsAppFab />
       <ChatWidget />
       <MotionProvider />
+      <CouponCapture />
     </>
   );
 }

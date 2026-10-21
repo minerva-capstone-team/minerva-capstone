@@ -139,11 +139,14 @@ export interface WelcomeEmailData {
   couponCode: string;
   percent: number;
   productName: string | null;
+  /** Slug del producto de interés: el botón "Comprar ahora" lo deja en el carro con el cupón. */
+  productSlug?: string | null;
   expiresAt: Date;
 }
 
 function welcomeHtml(to: string, d: WelcomeEmailData) {
   const login = `${site.url}/cuenta`;
+  const buy = d.productSlug ? `${site.url}/comprar/${encodeURIComponent(d.productSlug)}?cupon=${encodeURIComponent(d.couponCode)}` : `${site.url}/productos?cupon=${encodeURIComponent(d.couponCode)}`;
   const what = d.productName ? `${d.percent}% de descuento en ${esc(d.productName)}` : `${d.percent}% de descuento en tu próxima compra`;
   const until = d.expiresAt.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
   const access = d.password
@@ -160,7 +163,8 @@ ${access}
 <p style="margin:0 0 6px;color:#555">Tu cupón</p>
 <p style="margin:0 0 6px;padding:14px 16px;background:#f6f6f6;border-radius:8px;font-family:monospace;font-size:20px;font-weight:bold">${esc(d.couponCode)}</p>
 <p style="margin:0 0 20px;font-size:13px;color:#555">Válido hasta el ${until}, un solo uso, con este mismo correo. Se aplica solo en el checkout cuando inicias sesión.</p>
-<p style="margin:24px 0"><a href="${login}" style="background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">Entrar a mi cuenta</a></p>
+<p style="margin:24px 0 8px"><a href="${buy}" style="background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">${d.productSlug ? "Comprar ahora con mi cupón" : "Ver productos con mi cupón"}</a></p>
+<p style="margin:0 0 24px"><a href="${login}" style="color:#555;font-size:13px">O entrar a mi cuenta</a></p>
 <p style="font-size:13px;color:#555">Si no pediste esto, ignora este correo o escríbenos al ${esc(site.whatsappDisplay)}.</p>`);
 }
 

@@ -4,6 +4,8 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { isEmailConfigured, sendOrderEmails, type OrderEmailData } from "@/lib/email";
 import { isPushConfigured, sendPush, type PushSub } from "@/lib/push";
 import { formatCLP } from "@/lib/format";
+import { esc, isTelegramConfigured, notifyAdmins } from "@/lib/telegram";
+import { site } from "@/lib/site";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,6 +44,11 @@ async function pushChannel(sb: SupabaseClient, orderId: string): Promise<Channel
   if (!data) return { sent: false, reason: "not found" };
 
   const o = data as { order_number: string; total: number; customer: string; subscriptions: PushSub[] };
+  // Telegram usa el mismo aviso único del pedido (claim_order_push) para no repetirlo.
+  await notifyAdmins(`🛒 <b>Nuevo pedido ${esc(o.order_number)}</b>\n${esc(o.customer)} · ${formatCLP(o.total)}`, [
+    [{ text: "Ver pedido", url: `${site.url}/admin/pedidos?pedido=${encodeURIComponent(o.order_number)}` }],
+  ]);
+  if (!isPushConfigured) return { sent: true };
   if (!o.subscriptions.length) {
     console.warn(`[order-push] ${o.order_number}: ningún dispositivo del admin tiene las notificaciones activadas.`);
     return { sent: false, reason: "no subscriptions" };
@@ -67,13 +74,13 @@ async function pushChannel(sb: SupabaseClient, orderId: string): Promise<Channel
 export async function POST(req: NextRequest) {
   const { orderId } = (await req.json().catch(() => ({}))) as { orderId?: string };
   if (!orderId || !UUID.test(orderId)) return NextResponse.json({ error: "bad request" }, { status: 400 });
-  if (!isEmailConfigured && !isPushConfigured) return NextResponse.json({ error: "notifications not configured" }, { status: 503 });
+  if (!isEmailConfigured && !isPushConfigured && !isTelegramConfigured) return NextResponse.json({ error: "notifications not configured" }, { status: 503 });
   const sb = getServerSupabase();
   if (!sb) return NextResponse.json({ error: "not configured" }, { status: 503 });
 
   const [email, push] = await Promise.all([
     isEmailConfigured ? emailChannel(sb, orderId) : Promise.resolve<Channel>({ sent: false, reason: "not configured" }),
-    isPushConfigured ? pushChannel(sb, orderId) : Promise.resolve<Channel>({ sent: false, reason: "not configured" }),
+    isPushConfigured || isTelegramConfigured ? pushChannel(sb, orderId) : Promise.resolve<Channel>({ sent: false, reason: "not configured" }),
   ]);
   const notFound = [email, push].every((c) => c.reason === "not found" || c.reason === "not configured");
   return NextResponse.json({ email, push }, { status: notFound ? 404 : 200 });

@@ -24,6 +24,7 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
    - `supabase/migrations/0006_asistente_diseno_regalo.sql` — registro de preguntas al asistente (/admin/instagram), aprobación de diseño y regalo con mensaje secreto. **Si alguna vez vuelves a ejecutar 0004, ejecuta 0006 de nuevo después** (0006 reemplaza `create_order` y `track_order`).
    - `supabase/migrations/0007_cupones_instagram.sql` — cupones personales y por producto, y cuentas con cupón creadas desde los DMs de Instagram (necesita `SUPABASE_SERVICE_ROLE_KEY` y un dominio verificado en Resend). Si vuelves a ejecutar 0004 o 0006, ejecuta 0007 después.
    - `supabase/migrations/0008_aprobar_cuentas_instagram.sql` — las solicitudes de cuenta por DM quedan "por aprobar" y se aceptan o rechazan en `/admin/cuentas-instagram`.
+   - `supabase/migrations/0009_telegram_permisos.sql` — permisos de lectura para el bot de Telegram.
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
    ```env
@@ -172,3 +173,17 @@ public/brand/           logo original de Minerva (+ versión PNG con fondo trans
 - **Fotos de producto:** súbelas desde `/admin`. (La foto de la taza mencionada no estaba en la carpeta del proyecto; mientras tanto se usan ilustraciones.)
 - **Logo en alta resolución:** el archivo recibido es de 150×150 px. Reemplaza `public/brand/minerva-logo.png` por una versión PNG/SVG más grande para que se vea nítido en pantallas retina.
 - **Precios:** los del catálogo demo son referenciales.
+
+## Bot de Telegram para el equipo (opcional)
+
+Avisa de cada pedido nuevo y de cada solicitud de cuenta de Instagram (con botones Aceptar / Rechazar), y responde `/resumen`, `/pedidos`, `/cuentas` y `/stock`. Solo habla con los chats autorizados.
+
+1. En Telegram abre **@BotFather** → `/newbot` y copia el token.
+2. En Vercel agrega `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` (una clave inventada, solo letras, números, `_` y `-`) y haz Redeploy. Ejecuta también `0009_telegram_permisos.sql` en Supabase.
+3. Registra el webhook abriendo en el navegador (cambia TOKEN y SECRETO):
+   `https://api.telegram.org/botTOKEN/setWebhook?url=https://TU-DOMINIO/api/telegram&secret_token=SECRETO`
+4. Escríbele `/start` al bot: te responde con tu número de chat. Agrégalo a `TELEGRAM_ADMIN_CHAT_IDS` (varios, separados por coma) y haz Redeploy.
+
+## Compra rápida desde Instagram y correos
+
+`/comprar/<slug>?cupon=CODIGO` deja el producto en el carro, guarda el cupón y lleva directo al checkout (si el producto es personalizable lleva a la ficha para elegir el diseño). El checkout aplica el cupón solo y, con la sesión iniciada, trae el correo puesto. El bot de Instagram y el correo de bienvenida usan estos enlaces.
