@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { Customization, Product } from "@/lib/types";
 import { badgeLabel, cn, formatCLP, stockLabel } from "@/lib/format";
 import { downscaleImage } from "@/lib/images";
+import { assessImage, type ImageQuality } from "@/lib/image-quality";
 import { productInquiry } from "@/lib/whatsapp";
 import { toast, useCart } from "@/lib/stores";
 import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
@@ -11,6 +12,8 @@ import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { useAddToCart } from "@/components/cart/useAddToCart";
 import { ProductArt } from "./ProductArt";
 import { CustomizationPreview } from "./previews";
+import { DeliveryCountdown } from "./DeliveryCountdown";
+import { PhotoQuality } from "./PhotoQuality";
 
 function Gallery({ product }: { product: Product }) {
   const slides: { key: string; node: React.ReactNode }[] = product.images.length
@@ -97,6 +100,7 @@ export function ProductDetail({ product }: { product: Product }) {
   const [text, setText] = useState("");
   const [name, setName] = useState("");
   const [image, setImage] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [quality, setQuality] = useState<ImageQuality | null>(null);
   const [uploading, setUploading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -117,6 +121,8 @@ export function ProductDetail({ product }: { product: Product }) {
     try {
       const dataUrl = await downscaleImage(file);
       setImage({ dataUrl, name: file.name });
+      // La calidad se mide con el archivo original (el del carrito ya viene reducido).
+      setQuality(await assessImage(file).catch(() => null));
     } catch (e) {
       toast({ title: "No pudimos cargar la imagen", description: e instanceof Error ? e.message : undefined, tone: "error" });
     } finally {
@@ -167,6 +173,8 @@ export function ProductDetail({ product }: { product: Product }) {
               Preparación: {product.preparation_days} {product.preparation_days === 1 ? "día hábil" : "días hábiles"}
             </li>
           </ul>
+
+          <DeliveryCountdown prepDays={product.preparation_days} />
 
           {product.variants.length > 0 && (
             <fieldset className="mt-8">
@@ -239,7 +247,11 @@ export function ProductDetail({ product }: { product: Product }) {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={image.dataUrl} alt="Imagen cargada" className="size-14 rounded-xl object-cover" />
                       <span className="min-w-0 flex-1 truncate text-sm">{image.name}</span>
-                      <button type="button" onClick={() => setImage(null)} className="grid size-10 place-items-center rounded-full hover:bg-m-red/10 hover:text-m-red" aria-label="Quitar imagen">
+                      <button type="button" onClick={() => {
+                          setImage(null);
+                          setQuality(null);
+                        }}
+                        className="grid size-10 place-items-center rounded-full hover:bg-m-red/10 hover:text-m-red" aria-label="Quitar imagen">
                         <Icon name="trash" size={18} />
                       </button>
                     </div>
@@ -260,6 +272,7 @@ export function ProductDetail({ product }: { product: Product }) {
                       {uploading ? "Procesando imagen…" : "Sube o arrastra tu imagen (JPG, PNG, WEBP)"}
                     </label>
                   )}
+                  {image && quality && <PhotoQuality quality={quality} />}
                 </div>
                 <p className="text-xs text-ink-soft">Antes de producir te enviamos el diseño final por WhatsApp para tu aprobación.</p>
               </div>
