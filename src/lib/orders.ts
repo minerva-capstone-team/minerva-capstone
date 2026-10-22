@@ -1,5 +1,6 @@
 "use client";
 import { dataUrlToBlob } from "./images";
+import { getImage } from "./image-store";
 import { getBrowserSupabase } from "./supabase/client";
 import { UPLOADS_BUCKET } from "./supabase/config";
 import type { BillingData, CartItem, CheckoutCustomer, DocumentType, PlacedOrder } from "./types";
@@ -92,8 +93,10 @@ export async function placeOrder(
         let image_path: string | null = null;
         const dataUrl = item.customization?.imageDataUrl;
         if (dataUrl) {
-          const blob = dataUrlToBlob(dataUrl);
-          const ext = blob.type === "image/webp" ? "webp" : "jpg";
+          // Se sube la versión en alta resolución; si el navegador ya no la tiene, la vista previa.
+          const full = item.customization?.imageKey ? await getImage(item.customization.imageKey) : null;
+          const blob = full ?? dataUrlToBlob(dataUrl);
+          const ext = blob.type === "image/webp" ? "webp" : blob.type === "image/png" ? "png" : "jpg";
           const path = `${folder}/${index}.${ext}`;
           const { error } = await sb.storage.from(UPLOADS_BUCKET).upload(path, blob, { contentType: blob.type });
           if (error) throw new Error("No pudimos subir tu imagen de personalización. Intenta nuevamente.");

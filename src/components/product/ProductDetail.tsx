@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { captureCouponFromUrl, readCoupon } from "@/lib/coupon-link";
 import type { Customization, Product } from "@/lib/types";
 import { badgeLabel, cn, formatCLP, stockLabel } from "@/lib/format";
-import { downscaleImage } from "@/lib/images";
+import { prepareForPrint, previewDataUrl } from "@/lib/images";
+import { putImage } from "@/lib/image-store";
 import { assessImage, type ImageQuality } from "@/lib/image-quality";
 import { productInquiry } from "@/lib/whatsapp";
 import { toast, useCart } from "@/lib/stores";
@@ -16,6 +17,7 @@ import { ProductArt } from "./ProductArt";
 import { CustomizationPreview } from "./previews";
 import { DeliveryCountdown } from "./DeliveryCountdown";
 import { PhotoQuality } from "./PhotoQuality";
+import { PhotoTools, type PhotoFix } from "./PhotoTools";
 
 function Gallery({ product }: { product: Product }) {
   const slides: { key: string; node: React.ReactNode }[] = product.images.length
@@ -107,7 +109,11 @@ export function ProductDetail({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
   const [text, setText] = useState("");
   const [name, setName] = useState("");
-  const [image, setImage] = useState<{ dataUrl: string; name: string } | null>(null);
+  const [image, setImage] = useState<{ dataUrl: string; name: string; key: string | null } | null>(null);
+  // Versión que se imprime (alta resolución) y la original, para poder deshacer las mejoras con IA.
+  const [printBlob, setPrintBlob] = useState<Blob | null>(null);
+  const [originalBlob, setOriginalBlob] = useState<Blob | null>(null);
+  const [fixes, setFixes] = useState<PhotoFix[]>([]);
   const [quality, setQuality] = useState<ImageQuality | null>(null);
   const [uploading, setUploading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -120,16 +126,27 @@ export function ProductDetail({ product }: { product: Product }) {
   const available = Math.max(0, Math.min(product.stock - inCart, variantLeft));
   const customization: Customization | null =
     product.customizable && (text.trim() || name.trim() || image)
-      ? { text: text.trim() || undefined, name: name.trim() || undefined, imageDataUrl: image?.dataUrl, imageName: image?.name }
+      ? { text: text.trim() || undefined, name: name.trim() || undefined, imageDataUrl: image?.dataUrl, imageName: image?.name, imageKey: image?.key ?? undefined }
       : null;
+
+  /** Guarda una versión de la foto: alta resolución en el navegador + vista previa liviana para el carro. */
+  const saveVersion = async (blob: Blob, name: string) => {
+    const full = await prepareForPrint(blob);
+    const [dataUrl, key, q] = await Promise.all([previewDataUrl(full), putImage(full), assessImage(full).catch(() => null)]);
+    setImage({ dataUrl, name, key });
+    setPrintBlob(full);
+    setQuality(q);
+    return full;
+  };
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await downscaleImage(file);
-      setImage({ dataUrl, name: file.name });
-      // La calidad se mide con el archivo original (el del carrito ya viene reducido).
+      const full = await saveVersion(file, file.name);
+      setOriginalBlob(full);
+      setFixes([]);
+      // La calidad se mide con el archivo original (antes de ajustarlo para imprimir).
       setQuality(await assessImage(file).catch(() => null));
     } catch (e) {
       toast({ title: "No pudimos cargar la imagen", description: e instanceof Error ? e.message : undefined, tone: "error" });
@@ -137,6 +154,17 @@ export function ProductDetail({ product }: { product: Product }) {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  const onFix = async (blob: Blob, fix: PhotoFix) => {
+    await saveVersion(blob, image?.name ?? "foto");
+    setFixes((f) => [...f, fix]);
+  };
+
+  const onRevert = async () => {
+    if (!originalBlob) return;
+    await saveVersion(originalBlob, image?.name ?? "foto");
+    setFixes([]);
   };
 
   const onAdd = () => {
@@ -282,6 +310,9 @@ export function ProductDetail({ product }: { product: Product }) {
                       <button type="button" onClick={() => {
                           setImage(null);
                           setQuality(null);
+                          setPrintBlob(null);
+                          setOriginalBlob(null);
+                          setFixes([]);
                         }}
                         className="grid size-10 place-items-center rounded-full hover:bg-m-red/10 hover:text-m-red" aria-label="Quitar imagen">
                         <Icon name="trash" size={18} />
@@ -305,6 +336,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     </label>
                   )}
                   {image && quality && <PhotoQuality quality={quality} />}
+                  {image && printBlob && <PhotoTools current={printBlob} quality={quality} applied={fixes} onResult={onFix} onRevert={() => void onRevert()} />}
                 </div>
                 <p className="text-xs text-ink-soft">Antes de producir te enviamos el diseño final por WhatsApp para tu aprobación.</p>
               </div>

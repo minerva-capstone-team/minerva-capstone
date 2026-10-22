@@ -68,6 +68,10 @@ export default function PrivacyPage() {
               <strong>Si compras un regalo:</strong> el mensaje y la firma que escribes para la tarjeta. Solo los puede leer quien tenga el código QR de la tarjeta.
             </li>
             <li>
+              <strong>Si usas «Mejora tu foto con IA»:</strong> la foto se procesa dentro de tu propio navegador; no la enviamos a ningún servicio. Para hacerlo, tu navegador descarga
+              una única vez los modelos de IA desde Hugging Face y jsDelivr (no les mandamos tu foto ni tus datos).
+            </li>
+            <li>
               <strong>Si tu pedido es personalizado:</strong> las pruebas de diseño que te enviamos y tu respuesta (aprobación o cambios pedidos).
             </li>
             <li>
