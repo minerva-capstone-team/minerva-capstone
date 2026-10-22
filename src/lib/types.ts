@@ -76,6 +76,8 @@ export interface Customization {
   /** Imagen reducida en el navegador (data URL) hasta que se sube con el pedido. */
   imageDataUrl?: string;
   imageName?: string;
+  /** Clave de la versión en alta resolución guardada en el navegador (IndexedDB); es la que se imprime. */
+  imageKey?: string;
 }
 
 export interface CartItem {

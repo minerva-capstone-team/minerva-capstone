@@ -17,7 +17,7 @@ const OK_PX = 800;
  * Revisa la foto ORIGINAL (antes de reducirla para el carrito) y avisa si se verá pixelada.
  * Mide solo la resolución: no detecta fotos movidas o desenfocadas.
  */
-export async function assessImage(file: File): Promise<ImageQuality> {
+export async function assessImage(file: Blob): Promise<ImageQuality> {
   const bitmap = await createImageBitmap(file);
   const { width, height } = bitmap;
   bitmap.close();
