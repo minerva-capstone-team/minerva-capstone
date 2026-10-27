@@ -127,6 +127,9 @@ export default function PrivacyPage() {
               pedimos no escribir datos sensibles (RUT, claves, datos bancarios) en el asistente.
             </li>
             <li>
+              <strong>Mercado Pago:</strong> procesa los pagos con tarjeta o saldo cuando eliges pagar en la web. Recibe tu nombre, correo y el monto del pedido; los datos de tu tarjeta los ingresas directamente en Mercado Pago y nosotros nunca los vemos.
+            </li>
+            <li>
               <strong>Meta (Instagram y WhatsApp):</strong> por donde recibimos y respondemos tus mensajes; aplican sus propias políticas de privacidad.
             </li>
             <li>

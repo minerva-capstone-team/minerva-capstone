@@ -55,7 +55,7 @@ export const paymentProviders: PaymentProvider[] = [
   {
     id: "mercadopago",
     label: "Mercado Pago",
-    description: "Paga con tu cuenta o tarjetas.",
+    description: "Tarjetas de crédito y débito, o tu saldo de Mercado Pago. Pago seguro en su sitio.",
     enabled: process.env.NEXT_PUBLIC_PAYMENTS_MERCADOPAGO === "true",
     start: (order) => startHosted("mercadopago", order),
   },

@@ -17,7 +17,7 @@ export const faqs = [
   },
   {
     q: "¿Qué medios de pago aceptan?",
-    a: "Por ahora coordinamos el pago por transferencia vía WhatsApp al confirmar tu pedido. Muy pronto podrás pagar con Webpay y Mercado Pago directamente en la web.",
+    a: "Puedes pagar en la web con Mercado Pago (tarjetas de crédito, débito o saldo de Mercado Pago) o, si prefieres, coordinar una transferencia por WhatsApp al confirmar tu pedido.",
   },
   {
     q: "¿Hacen pedidos por mayor o para eventos y empresas?",

@@ -25,6 +25,7 @@ Sin configurar nada, la tienda funciona con un **catálogo de demostración** (`
    - `supabase/migrations/0007_cupones_instagram.sql` — cupones personales y por producto, y cuentas con cupón creadas desde los DMs de Instagram (necesita `SUPABASE_SERVICE_ROLE_KEY` y un dominio verificado en Resend). Si vuelves a ejecutar 0004 o 0006, ejecuta 0007 después.
    - `supabase/migrations/0008_aprobar_cuentas_instagram.sql` — las solicitudes de cuenta por DM quedan "por aprobar" y se aceptan o rechazan en `/admin/cuentas-instagram`.
    - `supabase/migrations/0009_telegram_permisos.sql` — permisos de lectura para el bot de Telegram.
+   - `supabase/migrations/0011_mercadopago.sql` — registro del pago con Mercado Pago (proveedor, id de pago, fecha).
    - `supabase/migrations/0010_promociones_automaticas.sql` — liquidación automática por bajo stock y campañas por fecha especial (se ajustan en `/admin/promociones`). **Reemplaza `create_order`: si vuelves a ejecutar 0004, 0006 o 0007, ejecuta 0010 después.**
    - `supabase/seed.sql` — categorías y productos iniciales (opcional).
 3. En **Project Settings → API** copia la *Project URL* y la *anon public key* a `.env.local`:
@@ -184,6 +185,14 @@ Avisa de cada pedido nuevo y de cada solicitud de cuenta de Instagram (con boton
 3. Registra el webhook abriendo en el navegador (cambia TOKEN y SECRETO):
    `https://api.telegram.org/botTOKEN/setWebhook?url=https://TU-DOMINIO/api/telegram&secret_token=SECRETO`
 4. Escríbele `/start` al bot: te responde con tu número de chat. Agrégalo a `TELEGRAM_ADMIN_CHAT_IDS` (varios, separados por coma) y haz Redeploy.
+
+## Pagos con Mercado Pago (Checkout Pro)
+
+1. Ejecuta `supabase/migrations/0011_mercadopago.sql`.
+2. En Vercel agrega `MP_ACCESS_TOKEN` (access token de producción), `NEXT_PUBLIC_PAYMENTS_MERCADOPAGO=true` y, recomendado, `MP_WEBHOOK_SECRET`. Redeploy.
+3. En Mercado Pago → Tus integraciones → tu aplicación → **Webhooks**: URL `https://TU-DOMINIO/api/payments/mercadopago/webhook`, evento **Pagos**. Copia la clave secreta a `MP_WEBHOOK_SECRET`.
+
+La clienta paga en Mercado Pago y vuelve a `/pedido/<número>`. El pedido se marca **pagado** (y pasa a confirmado) solo cuando el webhook consulta el pago en la API de Mercado Pago y el monto calza. Llega aviso por Telegram y correo a la clienta. Reembolsos y contracargos pasan el pedido a "reembolsado".
 
 ## Compra rápida desde Instagram y correos
 
