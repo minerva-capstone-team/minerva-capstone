@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getLocalOrder } from "@/lib/orders";
+import { paymentProviders } from "@/lib/payments";
 import { orderMessage, waLink } from "@/lib/whatsapp";
 import { formatCLP } from "@/lib/format";
 import type { PlacedOrder } from "@/lib/types";
@@ -9,7 +10,23 @@ import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
 
 export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
   const [order, setOrder] = useState<PlacedOrder | null | undefined>(undefined);
-  useEffect(() => setOrder(getLocalOrder(orderNumber)), [orderNumber]);
+  // Resultado que entrega Mercado Pago al volver: ?pago=ok | pendiente | error
+  const [pago, setPago] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  useEffect(() => {
+    setOrder(getLocalOrder(orderNumber));
+    setPago(new URLSearchParams(window.location.search).get("pago"));
+  }, [orderNumber]);
+
+  const payAgain = async (o: PlacedOrder) => {
+    setRetrying(true);
+    try {
+      window.location.href = await paymentProviders.find((p) => p.id === "mercadopago")!.start(o);
+    } catch {
+      setRetrying(false);
+      window.open(orderMessage(o), "_blank", "noopener,noreferrer");
+    }
+  };
 
   if (order === undefined) {
     return <div className="skeleton mx-auto h-96 max-w-2xl rounded-[2rem]" aria-busy="true" aria-label="Cargando pedido" />;
@@ -37,12 +54,39 @@ export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
         <h1 className="display mt-4 text-[clamp(2.5rem,6vw,4rem)]">
           ¡Gracias, <span className="serif-accent text-gradient">{order.customer.first_name}!</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">
-          Recibimos tu pedido. El último paso es coordinar el pago y el envío por WhatsApp — te enviamos todo listo.
-        </p>
-        <a href={orderMessage(order)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-8 h-14 px-8 text-base">
-          <WhatsAppIcon /> Coordinar pago por WhatsApp
-        </a>
+        {pago === "ok" ? (
+          <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">
+            <strong className="text-[#1c6b51]">¡Pago recibido con Mercado Pago!</strong> Confirmamos tu pedido y te avisaremos por correo cada avance.
+            {order.shipping_pending && " El costo de envío a tu región lo coordinamos por WhatsApp."}
+          </p>
+        ) : pago === "pendiente" ? (
+          <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">
+            Tu pago está <strong>en proceso</strong> en Mercado Pago. Apenas se acredite confirmamos tu pedido y te avisamos por correo.
+          </p>
+        ) : pago === "error" || (order.payment_method === "mercadopago" && !pago) ? (
+          <>
+            <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">
+              {pago === "error" ? "El pago no se completó. Tu pedido sigue reservado: puedes intentarlo de nuevo o coordinarlo por WhatsApp." : "Tu pedido está reservado. Falta el pago."}
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button type="button" className="btn btn-primary h-14 px-8 text-base" disabled={retrying} onClick={() => void payAgain(order)}>
+                {retrying ? "Abriendo Mercado Pago…" : "Pagar con Mercado Pago"}
+              </button>
+              <a href={orderMessage(order)} target="_blank" rel="noopener noreferrer" className="btn btn-wa h-14 px-8 text-base">
+                <WhatsAppIcon /> Coordinar por WhatsApp
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">
+              Recibimos tu pedido. El último paso es coordinar el pago y el envío por WhatsApp — te enviamos todo listo.
+            </p>
+            <a href={orderMessage(order)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-8 h-14 px-8 text-base">
+              <WhatsAppIcon /> Coordinar pago por WhatsApp
+            </a>
+          </>
+        )}
       </div>
 
       <div className="mt-12 rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
