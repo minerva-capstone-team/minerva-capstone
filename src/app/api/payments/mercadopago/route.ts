@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { site } from "@/lib/site";
+import { esc, notifyAdmins } from "@/lib/telegram";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,7 +47,10 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ url });
   } catch (err) {
-    console.error("[mercadopago] preferencia:", (err as Error).message);
+    const reason = (err as Error).message;
+    console.error("[mercadopago] preferencia:", reason);
+    // Aviso al equipo con la causa, para arreglarlo sin adivinar (el cliente ve su pedido con opción de reintentar).
+    await notifyAdmins(`⚠️ <b>No se pudo iniciar el pago</b> de ${esc(order.order_number)}\n${esc(reason)}\nEl cliente puede reintentar o coordinar por WhatsApp. Usa /pagos para revisar la conexión.`);
     return NextResponse.json({ error: "payment provider error" }, { status: 502 });
   }
 }
