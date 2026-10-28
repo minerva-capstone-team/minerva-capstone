@@ -3,6 +3,7 @@ import { esc, sendMessage, signupCard } from "./telegram";
 import { getServiceSupabase } from "./supabase/service";
 import { formatCLP } from "./format";
 import { approveSignup, rejectSignup } from "./instagram-signup";
+import { checkAccount, isMercadoPagoConfigured, mercadoPagoSettings } from "./mercadopago";
 import { site } from "./site";
 
 const STATUS: Record<string, string> = {
@@ -19,6 +20,7 @@ const HELP = `<b>Comandos de Minerva</b>
 /pedidos — pedidos que siguen en curso
 /cuentas — solicitudes de cuenta de Instagram por revisar
 /stock — productos con poco stock
+/pagos — revisa la conexión con Mercado Pago
 /id — tu número de chat`;
 
 const noData = "No pude leer los datos (falta SUPABASE_SERVICE_ROLE_KEY o sus permisos).";
@@ -86,6 +88,14 @@ export async function handleCommand(chatId: number, command: string) {
       if (error) return sendMessage(chatId, noData);
       if (!data?.length) return sendMessage(chatId, "Todo con stock suficiente ✅");
       return sendMessage(chatId, `📦 <b>Poco stock</b>\n${data.map((p) => `• ${esc(p.name)}: <b>${p.stock}</b>`).join("\n")}`, [[{ text: "Abrir Productos", url: adminLink("/admin/productos") }]]);
+    }
+    case "pagos": {
+      const acc = await checkAccount();
+      const flag = process.env.NEXT_PUBLIC_PAYMENTS_MERCADOPAGO === "true";
+      return sendMessage(
+        chatId,
+        `💳 <b>Mercado Pago</b>\n${isMercadoPagoConfigured ? "✅" : "❌"} Token cargado\n${acc.ok ? `✅ Token válido (cuenta ${acc.id}, ${esc(acc.site)})` : `❌ Token: ${esc(acc.reason)}`}\n${flag ? "✅" : "❌"} Opción visible en el checkout\n${mercadoPagoSettings.webhookSecret ? "✅" : "➖"} Clave de firma del webhook ${mercadoPagoSettings.webhookSecret ? "configurada" : "(opcional, no configurada)"}\n🌐 Sitio: ${esc(site.url)}\nAvisos de pago a: ${esc(site.url)}/api/payments/mercadopago/webhook`,
+      );
     }
     case "id":
       return sendMessage(chatId, `Tu número de chat es <code>${chatId}</code>`);

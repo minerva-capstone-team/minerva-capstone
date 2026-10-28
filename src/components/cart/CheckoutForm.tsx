@@ -184,9 +184,20 @@ export function CheckoutForm() {
       setPlaced(true);
       clearCoupon();
       if (method !== "whatsapp") {
-        const url = await provider.start(order);
+        // El pedido ya existe: si la pasarela falla no se deja la pantalla en blanco, se lleva a su pedido
+        // (con "Pagar de nuevo" y WhatsApp) y el carro se vacía para no duplicarlo.
+        let url: string | null = null;
+        try {
+          url = await provider.start(order);
+        } catch {
+          url = null;
+        }
         clear();
-        window.location.href = url;
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+        router.push(`/pedido/${encodeURIComponent(order.order_number)}?pago=error`);
         return;
       }
       clear();

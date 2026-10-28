@@ -29,6 +29,19 @@ async function mp<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body;
 }
 
+/** Revisa que el token sirva y de qué cuenta es (para el comando /pagos del bot). */
+export async function checkAccount(): Promise<{ ok: true; id: number; site: string } | { ok: false; reason: string }> {
+  if (!token) return { ok: false, reason: "MP_ACCESS_TOKEN está vacío en este despliegue" };
+  try {
+    const u = await mp<{ id: number; site_id: string }>("/users/me");
+    return { ok: true, id: u.id, site: u.site_id };
+  } catch (err) {
+    return { ok: false, reason: (err as Error).message };
+  }
+}
+
+export const mercadoPagoSettings = { webhookSecret: Boolean(webhookSecret) };
+
 export interface PreferenceInput {
   orderId: string;
   orderNumber: string;
