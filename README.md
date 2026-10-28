@@ -99,13 +99,13 @@ El checkout pregunta si la clienta quiere boleta o factura; para factura pide RU
 
 ---
 
-## 4. Pagos (Webpay / Mercado Pago)
+## 4. Pagos (Mercado Pago)
 
 La arquitectura está en `src/lib/payments/index.ts`. Hoy el checkout registra el pedido y lleva al cliente a coordinar el pago por WhatsApp. Para activar una pasarela:
 
-1. Crea `src/app/api/payments/<webpay|mercadopago>/route.ts` que cree la transacción con credenciales **privadas** (variables sin `NEXT_PUBLIC_`) y devuelva `{ url }`.
+1. Crea `src/app/api/payments/<proveedor>/route.ts` que cree la transacción con credenciales **privadas** (variables sin `NEXT_PUBLIC_`) y devuelva `{ url }`.
 2. Crea el webhook/retorno que marque `orders.payment_status = 'pagado'` usando la `service_role` **solo en el servidor**.
-3. Pon `NEXT_PUBLIC_PAYMENTS_WEBPAY=true` (o `..._MERCADOPAGO`). La opción se habilita sola en el checkout.
+3. Pon `NEXT_PUBLIC_PAYMENTS_<PROVEEDOR>=true` (hoy `NEXT_PUBLIC_PAYMENTS_MERCADOPAGO`). La opción se habilita sola en el checkout.
 
 ---
 

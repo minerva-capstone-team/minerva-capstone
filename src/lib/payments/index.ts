@@ -4,7 +4,7 @@
  * Cada pasarela implementa `PaymentProvider`. Hoy solo "whatsapp" está activa:
  * el pedido se registra y el pago se coordina por WhatsApp.
  *
- * Para activar Webpay o Mercado Pago:
+ * Hoy están activas "whatsapp" y "mercadopago". Para sumar otra pasarela:
  * 1. Crear una Route Handler en `src/app/api/payments/<proveedor>/route.ts` que cree
  *    la transacción con las credenciales privadas (variables de entorno SIN prefijo
  *    NEXT_PUBLIC_) y devuelva la URL de redirección.
@@ -15,7 +15,7 @@
 import type { PlacedOrder } from "../types";
 import { orderMessage } from "../whatsapp";
 
-export type PaymentMethodId = "whatsapp" | "webpay" | "mercadopago";
+export type PaymentMethodId = "whatsapp" | "mercadopago";
 
 export interface PaymentProvider {
   id: PaymentMethodId;
@@ -26,7 +26,7 @@ export interface PaymentProvider {
   start: (order: PlacedOrder) => Promise<string>;
 }
 
-async function startHosted(provider: "webpay" | "mercadopago", order: PlacedOrder) {
+async function startHosted(provider: "mercadopago", order: PlacedOrder) {
   const res = await fetch(`/api/payments/${provider}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -44,13 +44,6 @@ export const paymentProviders: PaymentProvider[] = [
     description: "Registramos tu pedido y te enviamos los datos de transferencia por WhatsApp.",
     enabled: true,
     start: async (order) => orderMessage(order),
-  },
-  {
-    id: "webpay",
-    label: "Webpay",
-    description: "Tarjetas de débito y crédito.",
-    enabled: process.env.NEXT_PUBLIC_PAYMENTS_WEBPAY === "true",
-    start: (order) => startHosted("webpay", order),
   },
   {
     id: "mercadopago",
