@@ -20,8 +20,23 @@ export const site = {
 };
 
 // Menú principal: solo 3 enlaces. Inicio es el logo; Nosotros, Preguntas y Personaliza siguen en la página y el footer.
-export const nav = [
-  { label: "Productos", href: "/productos" },
+export interface NavItem {
+  label: string;
+  href: string;
+  /** Submenú desplegable (escritorio) y sublista (móvil). */
+  children?: { label: string; href: string; text: string }[];
+}
+
+export const nav: NavItem[] = [
+  {
+    label: "Productos",
+    href: "/productos",
+    children: [
+      { label: "Sublimación", href: "/productos?categoria=sublimacion", text: "Tazones, tazas mágicas, mugs térmicos y más" },
+      { label: "Papelería", href: "/productos?categoria=papeleria", text: "Cuadernos, agendas, tarjetas, imanes y calendarios" },
+      { label: "Estampados textil", href: "/productos?categoria=estampados-textil", text: "Poleras, polerones y uniformes" },
+    ],
+  },
   { label: "Regalos", href: "/regalos" },
   { label: "Contacto", href: "/#contacto" },
 ];
