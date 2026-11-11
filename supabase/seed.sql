@@ -1,16 +1,17 @@
 -- Datos iniciales (mismo catálogo demo del sitio). Precios referenciales.
 
 insert into public.categories (name, slug, description, placeholder_art, position) values
-  ('Tazas', 'tazas', 'Tazas estampadas con tu foto, frase o diseño.', 'mug-dad', 1),
-  ('Papelería', 'papeleria', 'Cuadernos, agendas y libretas con tu nombre.', 'notebook', 2),
-  ('Regalos personalizados', 'regalos-personalizados', 'Detalles únicos para regalar.', 'tote', 3),
-  ('Stickers', 'stickers', 'Stickers troquelados para todo.', 'stickers', 4),
-  ('Eventos', 'eventos', 'Cumpleaños, baby showers y celebraciones.', 'party', 5),
-  ('Diseños especiales', 'disenos-especiales', 'Láminas e ilustraciones de autor.', 'print', 6)
+  ('Sublimación', 'sublimacion', 'Tazones, tazas mágicas, mugs térmicos y más, estampados por sublimación.', 'mug-dad', 1),
+  ('Papelería', 'papeleria', 'Cuadernos, agendas, stickers, tarjetas, imanes y calendarios.', 'notebook', 2),
+  ('Estampados textil', 'estampados-textil', 'Poleras, polerones y uniformes estampados.', 'tote', 3),
+  ('Regalos personalizados', 'regalos-personalizados', 'Detalles únicos para regalar.', 'tote', 4),
+  ('Stickers', 'stickers', 'Stickers troquelados para todo.', 'stickers', 5),
+  ('Eventos', 'eventos', 'Cumpleaños, baby showers y celebraciones.', 'party', 6),
+  ('Diseños especiales', 'disenos-especiales', 'Láminas e ilustraciones de autor.', 'print', 7)
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, price, compare_at_price, category_id, stock, featured, customizable, badge, preparation_days, preview_kind, placeholder_art)
-select 'Taza personalizada Día del Papá', 'taza-personalizada-dia-del-papa', 'Taza cerámica de 11 oz estampada por sublimación, con colores que no se borran en el lavado. Agrega el nombre de papá, una frase o una foto y la preparamos con todo el cariño para que llegue lista para regalar.', 7990, 9490, (select id from public.categories where slug = 'tazas'), 24, true, true, 'mas-vendido', 3, 'mug', 'mug-dad'
+select 'Taza personalizada Día del Papá', 'taza-personalizada-dia-del-papa', 'Taza cerámica de 11 oz estampada por sublimación, con colores que no se borran en el lavado. Agrega el nombre de papá, una frase o una foto y la preparamos con todo el cariño para que llegue lista para regalar.', 7990, 9490, (select id from public.categories where slug = 'sublimacion'), 24, true, true, 'mas-vendido', 3, 'mug', 'mug-dad'
 on conflict (slug) do nothing;
 insert into public.product_variants (product_id, name, price_delta, position)
 select id, 'Blanca clásica', 0, 0 from public.products where slug = 'taza-personalizada-dia-del-papa'
@@ -23,11 +24,11 @@ select id, 'Mágica (cambia con el calor)', 3000, 2 from public.products where s
   and not exists (select 1 from public.product_variants pv join public.products pp on pp.id = pv.product_id where pp.slug = 'taza-personalizada-dia-del-papa' and pv.name = 'Mágica (cambia con el calor)');
 
 insert into public.products (name, slug, description, price, compare_at_price, category_id, stock, featured, customizable, badge, preparation_days, preview_kind, placeholder_art)
-select 'Taza mágica con foto', 'taza-magica-con-foto', 'Negra por fuera hasta que le sirves algo caliente: ahí aparece tu foto. Una sorpresa que se repite cada mañana.', 10990, null, (select id from public.categories where slug = 'tazas'), 12, true, true, 'nuevo', 4, 'mug', 'mug-magic'
+select 'Taza mágica con foto', 'taza-magica-con-foto', 'Negra por fuera hasta que le sirves algo caliente: ahí aparece tu foto. Una sorpresa que se repite cada mañana.', 10990, null, (select id from public.categories where slug = 'sublimacion'), 12, true, true, 'nuevo', 4, 'mug', 'mug-magic'
 on conflict (slug) do nothing;
 
 insert into public.products (name, slug, description, price, compare_at_price, category_id, stock, featured, customizable, badge, preparation_days, preview_kind, placeholder_art)
-select 'Taza lettering con nombre', 'taza-lettering-con-nombre', 'Tu nombre en lettering hecho a mano, rodeado de detalles de color. Ideal para oficinas, profes y amigas.', 7990, null, (select id from public.categories where slug = 'tazas'), 30, false, true, 'personalizable', 3, 'mug', 'mug-name'
+select 'Taza lettering con nombre', 'taza-lettering-con-nombre', 'Tu nombre en lettering hecho a mano, rodeado de detalles de color. Ideal para oficinas, profes y amigas.', 7990, null, (select id from public.categories where slug = 'sublimacion'), 30, false, true, 'personalizable', 3, 'mug', 'mug-name'
 on conflict (slug) do nothing;
 insert into public.product_variants (product_id, name, price_delta, position)
 select id, 'Blanca clásica', 0, 0 from public.products where slug = 'taza-lettering-con-nombre'

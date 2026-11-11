@@ -24,6 +24,9 @@ export function About() {
               nuestro trabajo es ayudarte a contarla.
             </p>
           </div>
+          <div className="relative mt-8 aspect-[3/2] overflow-hidden rounded-[1.75rem]">
+            <Image src="/fotos/13-taller.webp" alt="Mesa de trabajo del taller con plancha de transferencia y tazas por estampar" fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
+          </div>
         </div>
         <ul data-reveal="stagger" className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
           {VALUES.map((v) => (
