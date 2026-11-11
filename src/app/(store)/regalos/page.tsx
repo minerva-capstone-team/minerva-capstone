@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getProducts } from "@/lib/catalog";
+import Image from "next/image";
 import { GiftFinder } from "@/components/gift/GiftFinder";
 
 export const metadata: Metadata = {
@@ -19,6 +20,9 @@ export default async function GiftsPage() {
         </h1>
         <p className="mt-4 text-lg text-ink-soft">Dos preguntas y te mostramos ideas reales, con stock y precio.</p>
       </header>
+      <div className="relative mx-auto mt-10 aspect-[21/9] max-w-5xl overflow-hidden rounded-[1.75rem]">
+        <Image src="/fotos/09-armador-regalos.webp" alt="Manos armando una caja de regalo con una taza, una libreta y chocolates" fill sizes="(min-width: 1024px) 64rem, 100vw" className="object-cover" />
+      </div>
       <GiftFinder products={products} />
     </div>
   );

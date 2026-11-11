@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { OrderTracker } from "@/components/tracking/OrderTracker";
 
 export const metadata: Metadata = {
@@ -17,6 +18,9 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
           ¿Dónde va <span className="serif-accent text-gradient">mi pedido?</span>
         </h1>
         <p className="mx-auto mt-4 max-w-md text-lg text-ink-soft">Ingresa tu número de pedido y el email que usaste al comprar.</p>
+      </div>
+      <div className="relative mx-auto mt-10 aspect-[21/9] max-w-4xl overflow-hidden rounded-[1.75rem]">
+        <Image src="/fotos/16-entrega-casa.webp" alt="Pedido de Minerva en una bolsa de papel kraft frente a una puerta" fill sizes="(min-width: 1024px) 56rem, 100vw" className="object-cover" />
       </div>
       <OrderTracker initialOrder={(pedido ?? "").slice(0, 30)} />
     </div>

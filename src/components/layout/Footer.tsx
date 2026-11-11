@@ -10,8 +10,9 @@ const columns = [
     title: "Tienda",
     links: [
       { label: "Todos los productos", href: "/productos" },
-      { label: "Tazas", href: "/productos?categoria=tazas" },
+      { label: "Sublimación", href: "/productos?categoria=sublimacion" },
       { label: "Papelería", href: "/productos?categoria=papeleria" },
+      { label: "Estampados textil", href: "/productos?categoria=estampados-textil" },
       { label: "Stickers", href: "/productos?categoria=stickers" },
       { label: "Eventos", href: "/productos?categoria=eventos" },
     ],
