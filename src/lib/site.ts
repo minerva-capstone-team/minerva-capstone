@@ -19,12 +19,9 @@ export const site = {
   ],
 };
 
+// Menú principal: solo 3 enlaces. Inicio es el logo; Nosotros, Preguntas y Personaliza siguen en la página y el footer.
 export const nav = [
-  { label: "Inicio", href: "/" },
   { label: "Productos", href: "/productos" },
   { label: "Regalos", href: "/regalos" },
-  { label: "Personaliza", href: "/#personaliza" },
-  { label: "Nosotros", href: "/#nosotros" },
-  { label: "Preguntas frecuentes", href: "/#faq" },
   { label: "Contacto", href: "/#contacto" },
 ];
