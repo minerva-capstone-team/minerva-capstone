@@ -8,6 +8,7 @@ import { cn } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { Logo } from "./Logo";
 import { NavLink } from "./NavLink";
+import { NavDropdown } from "./NavDropdown";
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -65,7 +66,10 @@ export function Header() {
 
         <nav aria-label="Principal" className="hidden lg:block">
           <ul className="flex items-center gap-1">
-            {nav.map((item) => (
+            {nav.map((item) =>
+              item.children ? (
+                <NavDropdown key={item.href} item={item} active={isActive(item.href)} />
+              ) : (
               <li key={item.href}>
                 <NavLink
                   href={item.href}
@@ -76,7 +80,8 @@ export function Header() {
                   <span className="bg-gradient-minerva absolute inset-x-3.5 -bottom-0.5 h-0.5 origin-left scale-x-0 rounded-full transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-x-100 group-aria-[current=page]:scale-x-100" />
                 </NavLink>
               </li>
-            ))}
+              ),
+            )}
           </ul>
         </nav>
 

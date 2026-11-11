@@ -41,6 +41,17 @@ export function MobileMenu() {
                 {item.label}
                 <Icon name="arrow" className="text-ink-soft" />
               </NavLink>
+              {item.children && (
+                <ul className="mb-2 ml-1 space-y-0.5 border-l border-line pl-4">
+                  {item.children.map((c) => (
+                    <li key={c.href}>
+                      <NavLink href={c.href} onClick={close} className="block py-1.5 text-base text-ink-soft hover:text-ink">
+                        {c.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
           <li className="pt-2">
