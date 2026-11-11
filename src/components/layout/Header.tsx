@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { nav } from "@/lib/site";
+import type { NavItem } from "@/lib/site";
 import { cartCount, useCart, useUI } from "@/lib/stores";
 import { cn } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
@@ -10,7 +10,7 @@ import { Logo } from "./Logo";
 import { NavLink } from "./NavLink";
 import { NavDropdown } from "./NavDropdown";
 
-export function Header() {
+export function Header({ nav }: { nav: NavItem[] }) {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -67,7 +67,7 @@ export function Header() {
         <nav aria-label="Principal" className="hidden lg:block">
           <ul className="flex items-center gap-1">
             {nav.map((item) =>
-              item.children ? (
+              item.children?.length ? (
                 <NavDropdown key={item.href} item={item} active={isActive(item.href)} />
               ) : (
               <li key={item.href}>

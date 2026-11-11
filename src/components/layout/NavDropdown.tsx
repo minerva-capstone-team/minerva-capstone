@@ -73,7 +73,7 @@ export function NavDropdown({ item, active }: { item: NavItem; active: boolean }
                 className="block rounded-2xl px-4 py-3 transition-colors hover:bg-paper focus-visible:bg-paper"
               >
                 <span className="block text-[0.95rem] font-semibold text-ink">{c.label}</span>
-                <span className="mt-0.5 block text-sm leading-snug text-ink-soft">{c.text}</span>
+                {c.text && <span className="mt-0.5 block text-sm leading-snug text-ink-soft">{c.text}</span>}
               </Link>
             </li>
           ))}

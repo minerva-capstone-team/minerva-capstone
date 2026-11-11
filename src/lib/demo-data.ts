@@ -6,13 +6,13 @@
 import type { Category, Product, ProductVariant } from "./types";
 
 export const demoCategories: Category[] = [
-  { id: "cat-tazas", name: "Sublimación", slug: "sublimacion", description: "Tazones, tazas mágicas, mugs térmicos y más, estampados por sublimación.", image_url: "/fotos/02-taza-personalizada.webp", placeholder_art: "mug-dad", position: 1 },
-  { id: "cat-papeleria", name: "Papelería", slug: "papeleria", description: "Cuadernos, agendas, stickers, tarjetas, imanes y calendarios.", image_url: "/fotos/05-papeleria.webp", placeholder_art: "notebook", position: 2 },
-  { id: "cat-textil", name: "Estampados textil", slug: "estampados-textil", description: "Poleras, polerones y uniformes estampados.", image_url: null, placeholder_art: "tote", position: 3 },
-  { id: "cat-regalos", name: "Regalos personalizados", slug: "regalos-personalizados", description: "Detalles únicos para regalar.", image_url: "/fotos/08-regalo-envuelto.webp", placeholder_art: "tote", position: 4 },
-  { id: "cat-stickers", name: "Stickers", slug: "stickers", description: "Stickers troquelados para todo.", image_url: "/fotos/07-stickers.webp", placeholder_art: "stickers", position: 5 },
-  { id: "cat-eventos", name: "Eventos", slug: "eventos", description: "Cumpleaños, baby showers y celebraciones.", image_url: "/fotos/12-eventos.webp", placeholder_art: "party", position: 6 },
-  { id: "cat-especiales", name: "Diseños especiales", slug: "disenos-especiales", description: "Láminas e ilustraciones de autor.", image_url: null, placeholder_art: "print", position: 7 },
+  { id: "cat-tazas", name: "Sublimación", slug: "sublimacion", description: "Tazones, tazas mágicas, mugs térmicos y más, estampados por sublimación.", image_url: "/fotos/02-taza-personalizada.webp", placeholder_art: "mug-dad", position: 1, show_in_menu: true },
+  { id: "cat-papeleria", name: "Papelería", slug: "papeleria", description: "Cuadernos, agendas, stickers, tarjetas, imanes y calendarios.", image_url: "/fotos/05-papeleria.webp", placeholder_art: "notebook", position: 2, show_in_menu: true },
+  { id: "cat-textil", name: "Estampados textil", slug: "estampados-textil", description: "Poleras, polerones y uniformes estampados.", image_url: null, placeholder_art: "tote", position: 3, show_in_menu: true },
+  { id: "cat-regalos", name: "Regalos personalizados", slug: "regalos-personalizados", description: "Detalles únicos para regalar.", image_url: "/fotos/08-regalo-envuelto.webp", placeholder_art: "tote", position: 4, show_in_menu: false },
+  { id: "cat-stickers", name: "Stickers", slug: "stickers", description: "Stickers troquelados para todo.", image_url: "/fotos/07-stickers.webp", placeholder_art: "stickers", position: 5, show_in_menu: false },
+  { id: "cat-eventos", name: "Eventos", slug: "eventos", description: "Cumpleaños, baby showers y celebraciones.", image_url: "/fotos/12-eventos.webp", placeholder_art: "party", position: 6, show_in_menu: false },
+  { id: "cat-especiales", name: "Diseños especiales", slug: "disenos-especiales", description: "Láminas e ilustraciones de autor.", image_url: null, placeholder_art: "print", position: 7, show_in_menu: false },
 ];
 
 const cat = (id: string) => {

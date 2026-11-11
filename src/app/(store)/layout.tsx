@@ -1,5 +1,5 @@
-import { getSearchIndex } from "@/lib/catalog";
-import { site } from "@/lib/site";
+import { getCategories, getSearchIndex } from "@/lib/catalog";
+import { buildNav, site } from "@/lib/site";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileMenu } from "@/components/layout/MobileMenu";
@@ -27,18 +27,19 @@ const organizationLd = {
 };
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const index = await getSearchIndex();
+  const [index, categories] = await Promise.all([getSearchIndex(), getCategories()]);
+  const navItems = buildNav(categories);
   return (
     <>
       <a href="#contenido" className="sr-only z-[100] rounded-full bg-ink px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Saltar al contenido
       </a>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }} />
-      <Header />
+      <Header nav={navItems} />
       <main id="contenido">{children}</main>
       <Footer />
       <CartDrawer />
-      <MobileMenu />
+      <MobileMenu nav={navItems} />
       <SearchOverlay index={index} />
       <Toaster />
       <WhatsAppFab />
