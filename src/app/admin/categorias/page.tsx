@@ -17,6 +17,7 @@ interface Draft {
   description: string;
   image_url: string | null;
   position: number;
+  show_in_menu: boolean;
 }
 
 export default function AdminCategories() {
@@ -45,6 +46,7 @@ export default function AdminCategories() {
       description: draft.description.trim() || null,
       image_url: draft.image_url,
       position: draft.position,
+      show_in_menu: draft.show_in_menu,
     };
     const sb = adminDb();
     const { error } = draft.id ? await sb.from("categories").update(payload).eq("id", draft.id) : await sb.from("categories").insert(payload);
@@ -75,7 +77,7 @@ export default function AdminCategories() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setDraft({ name: "", slug: "", description: "", image_url: null, position: (items?.length ?? 0) + 1 })}
+            onClick={() => setDraft({ name: "", slug: "", description: "", image_url: null, position: (items?.length ?? 0) + 1, show_in_menu: true })}
           >
             <Icon name="plus" size={18} /> Nueva categoría
           </button>
@@ -152,6 +154,13 @@ export default function AdminCategories() {
               )}
             </div>
           </div>
+          <label className="flex items-center gap-3 sm:col-span-2">
+            <input type="checkbox" className="size-5 accent-[var(--color-ink)]" checked={draft.show_in_menu} onChange={(e) => setDraft({ ...draft, show_in_menu: e.target.checked })} />
+            <span>
+              <span className="block font-medium">Mostrar en el menú de Productos</span>
+              <span className="block text-sm text-ink-soft">Aparece en el menú desplegable de arriba, con su nombre y descripción.</span>
+            </span>
+          </label>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <button type="button" className="btn btn-ghost" onClick={() => setDraft(null)}>
               Cancelar
@@ -181,13 +190,16 @@ export default function AdminCategories() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{c.name}</span>
-                  <span className="text-sm text-ink-soft">/{c.slug}</span>
+                  <span className="text-sm text-ink-soft">
+                    /{c.slug}
+                    {c.show_in_menu !== false && <span className="ml-2 rounded-full bg-paper px-2 py-0.5 text-xs font-medium text-ink-2">En el menú</span>}
+                  </span>
                 </span>
                 <button
                   type="button"
                   className="grid size-9 place-items-center rounded-full hover:bg-paper"
                   aria-label={`Editar ${c.name}`}
-                  onClick={() => setDraft({ id: c.id, name: c.name, slug: c.slug, description: c.description ?? "", image_url: c.image_url, position: c.position })}
+                  onClick={() => setDraft({ id: c.id, name: c.name, slug: c.slug, description: c.description ?? "", image_url: c.image_url, position: c.position, show_in_menu: c.show_in_menu !== false })}
                 >
                   <Icon name="edit" size={17} />
                 </button>

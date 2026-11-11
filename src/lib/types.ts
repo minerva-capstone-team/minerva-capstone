@@ -25,6 +25,8 @@ export interface Category {
   image_url: string | null;
   placeholder_art: ArtKey | null;
   position: number;
+  /** Si aparece en el menú desplegable de Productos. */
+  show_in_menu?: boolean;
 }
 
 export interface ProductImage {

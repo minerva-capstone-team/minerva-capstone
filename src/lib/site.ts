@@ -27,15 +27,18 @@ export interface NavItem {
   children?: { label: string; href: string; text: string }[];
 }
 
+/** Arma el menú con las categorías que el administrador marcó para mostrarse (panel > Categorías). */
+export function buildNav(categories: { name: string; slug: string; description: string | null; show_in_menu?: boolean }[]): NavItem[] {
+  const children = categories
+    .filter((c) => c.show_in_menu !== false)
+    .map((c) => ({ label: c.name, href: `/productos?categoria=${c.slug}`, text: c.description ?? "" }));
+  return nav.map((item) => (item.href === "/productos" && children.length ? { ...item, children } : item));
+}
+
 export const nav: NavItem[] = [
   {
     label: "Productos",
     href: "/productos",
-    children: [
-      { label: "Sublimación", href: "/productos?categoria=sublimacion", text: "Tazones, tazas mágicas, mugs térmicos y más" },
-      { label: "Papelería", href: "/productos?categoria=papeleria", text: "Cuadernos, agendas, tarjetas, imanes y calendarios" },
-      { label: "Estampados textil", href: "/productos?categoria=estampados-textil", text: "Poleras, polerones y uniformes" },
-    ],
   },
   { label: "Regalos", href: "/regalos" },
   { label: "Contacto", href: "/#contacto" },

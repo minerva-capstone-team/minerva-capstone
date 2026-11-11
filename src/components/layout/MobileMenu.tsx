@@ -2,14 +2,14 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { nav, site } from "@/lib/site";
+import { site, type NavItem } from "@/lib/site";
 import { useUI } from "@/lib/stores";
 import { waLink } from "@/lib/whatsapp";
 import { Overlay } from "@/components/ui/Overlay";
 import { Icon, InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/Icon";
 import { NavLink } from "./NavLink";
 
-export function MobileMenu() {
+export function MobileMenu({ nav }: { nav: NavItem[] }) {
   const { overlay, close } = useUI();
   const pathname = usePathname();
   const open = overlay === "menu";
