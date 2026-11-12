@@ -9,13 +9,13 @@ export interface Recipient {
 }
 
 export const RECIPIENTS: Recipient[] = [
-  { id: "mama", label: "Mamá", match: /taza|cojin|cojín|cuadro|l[aá]mina|flor|agenda|cuaderno/i, why: "un detalle para usar todos los días" },
-  { id: "papa", label: "Papá", match: /taza|botella|polera|llavero|papá|papa/i, why: "práctico y con su nombre o una frase" },
-  { id: "pareja", label: "Mi pareja", match: /taza|m[aá]gica|foto|cojin|cojín|l[aá]mina|cuadro/i, why: "con una foto o fecha que ustedes conocen" },
-  { id: "amigo", label: "Amiga o amigo", match: /taza|stickers|tote|botella|cuaderno/i, why: "personalizado con una broma o recuerdo" },
-  { id: "nino", label: "Niña o niño", match: /sticker|cumplea|kit|botella|cuaderno|invitaci/i, why: "con su nombre y colores divertidos" },
-  { id: "profe", label: "Profesora o profesor", match: /taza|cuaderno|agenda|libreta|tote/i, why: "un agradecimiento que usará en clases" },
-  { id: "equipo", label: "Equipo o empresa", match: /taza|sticker|tote|botella|agenda|cuaderno/i, why: "con logo o nombre, ideal para repartir" },
+  { id: "mama", label: "Mamá", match: /taz[aó]|mug|coj[ií]n|cuadro|calendario|agenda|planner|cuaderno|[aá]lbum|fotograf/i, why: "un detalle para usar todos los días" },
+  { id: "papa", label: "Papá", match: /taz[aó]|mug|botella|vaso|reloj|mouse|polera|pap[aá]/i, why: "práctico y con su nombre o una frase" },
+  { id: "pareja", label: "Mi pareja", match: /taz[aó]|m[aá]gic|foto|coj[ií]n|cuadro|cien citas|calendario|[aá]lbum/i, why: "con una foto o fecha que ustedes conocen" },
+  { id: "amigo", label: "Amiga o amigo", match: /taz[aó]|mug|tote|botella|vaso|cuaderno|croquera|mouse/i, why: "personalizado con una broma o recuerdo" },
+  { id: "nino", label: "Niña o niño", match: /etiqueta|escolar|saco dulcero|dulcer|botella|cuaderno|croquera|taz[aó]n m[aá]gico|coj[ií]n/i, why: "con su nombre y colores divertidos" },
+  { id: "profe", label: "Profesora o profesor", match: /taz[aó]|mug|cuaderno|agenda|planner|croquera|tote|calendario/i, why: "un agradecimiento que usará en clases" },
+  { id: "equipo", label: "Equipo o empresa", match: /taz[aó]|mug|tote|botella|agenda|cuaderno|tarjeta|estuche|mouse|calendario|flyer|etiqueta/i, why: "con logo o nombre, ideal para repartir" },
   { id: "yo", label: "Para mí", match: /.*/, why: "porque también mereces algo bonito" },
 ];
 

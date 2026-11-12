@@ -12,9 +12,7 @@ const columns = [
       { label: "Todos los productos", href: "/productos" },
       { label: "Sublimación", href: "/productos?categoria=sublimacion" },
       { label: "Papelería", href: "/productos?categoria=papeleria" },
-      { label: "Estampados textil", href: "/productos?categoria=estampados-textil" },
-      { label: "Stickers", href: "/productos?categoria=stickers" },
-      { label: "Eventos", href: "/productos?categoria=eventos" },
+      { label: "Estampado textil y corporativo", href: "/productos?categoria=estampados-textil" },
     ],
   },
   {
