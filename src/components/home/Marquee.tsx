@@ -1,4 +1,4 @@
-const ITEMS = ["Tazas personalizadas", "Papelería", "Stickers", "Regalos únicos", "Eventos", "Diseños especiales", "Hecho en Chile"];
+const ITEMS = ["Sublimación", "Papelería", "Estampado textil", "Uniformes corporativos", "Calendarios y cuadernos", "Regalos personalizados", "Hecho en Chile"];
 const DOTS = ["bg-m-red", "bg-m-orange", "bg-m-yellow", "bg-m-green", "bg-m-blue", "bg-m-violet", "bg-m-magenta"];
 
 export function Marquee() {

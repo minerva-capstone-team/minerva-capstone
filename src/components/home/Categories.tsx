@@ -53,7 +53,9 @@ export function Categories({ categories, counts }: { categories: Category[]; cou
             <div className="flex h-full items-end justify-between gap-4 p-5 text-white sm:p-7">
               <div className="transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-1">
                 <p className="text-xs font-medium uppercase tracking-widest text-white/80">
-                  {counts[cat.id] ?? 0} {counts[cat.id] === 1 ? "producto" : "productos"}
+                  {cat.slug === "estampados-textil" && !(counts[cat.id] ?? 0)
+                    ? "Cotiza por WhatsApp"
+                    : `${counts[cat.id] ?? 0} ${counts[cat.id] === 1 ? "producto" : "productos"}`}
                 </p>
                 <h3 className={cn("display mt-1", i === 0 ? "text-4xl sm:text-5xl" : "text-3xl")}>{cat.name}</h3>
                 {cat.description && (

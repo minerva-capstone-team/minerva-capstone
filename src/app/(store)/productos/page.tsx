@@ -4,7 +4,7 @@ import { Catalog } from "@/components/product/Catalog";
 
 export const metadata: Metadata = {
   title: "Productos personalizados",
-  description: "Tazas personalizadas, papelería, stickers, regalos y artículos para eventos. Hechos a pedido en Chile por Minerva.",
+  description: "Sublimación (tazones, mugs, botellas, cojines), papelería (calendarios, cuadernos, agendas, tarjetas) y estampado textil. Hechos a pedido en Chile por Minerva.",
   alternates: { canonical: "/productos" },
 };
 

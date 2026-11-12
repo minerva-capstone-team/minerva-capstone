@@ -5,6 +5,7 @@ import type { Category, Product } from "@/lib/types";
 import { cn } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { ProductCard } from "./ProductCard";
+import { TextilQuote } from "./TextilQuote";
 
 type Sort = "recientes" | "precio-asc" | "precio-desc" | "nombre";
 const SORTS: { id: Sort; label: string }[] = [
@@ -119,9 +120,7 @@ export function Catalog({
       </div>
 
       <div className="mt-6 flex items-center justify-between text-sm text-ink-soft" aria-live="polite">
-        <p>
-          {results.length} {results.length === 1 ? "producto" : "productos"}
-        </p>
+        <p>{category === "estampados-textil" && results.length === 0 ? "Se cotiza por WhatsApp" : `${results.length} ${results.length === 1 ? "producto" : "productos"}`}</p>
         {activeCount > 0 && (
           <button
             type="button"
@@ -138,7 +137,9 @@ export function Catalog({
         )}
       </div>
 
-      {results.length === 0 ? (
+      {results.length === 0 && category === "estampados-textil" && !query ? (
+        <TextilQuote />
+      ) : results.length === 0 ? (
         <div className="mt-8 flex flex-col items-center rounded-[2rem] bg-paper-2 px-6 py-20 text-center">
           <span className="grid size-16 place-items-center rounded-full bg-white">
             <Icon name="search" size={26} />
