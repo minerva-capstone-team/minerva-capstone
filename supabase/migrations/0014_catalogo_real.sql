@@ -3,6 +3,9 @@
 -- Estampado textil se cotiza por WhatsApp (sin precios), por eso no tiene productos con carrito.
 -- Es repetible: se puede ejecutar más de una vez.
 
+-- 0) Columna del menú desplegable (por si la migración 0013 no se ejecutó)
+alter table public.categories add column if not exists show_in_menu boolean not null default true;
+
 -- 1) Categorías
 update public.categories
    set name = 'Estampado textil y corporativo',
