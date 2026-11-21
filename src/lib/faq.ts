@@ -5,7 +5,7 @@ export const faqs = [
   },
   {
     q: "¿Hacen envíos a regiones?",
-    a: "Sí, enviamos a todo Chile. Al finalizar tu compra coordinamos contigo por WhatsApp el medio de envío y su costo según tu comuna.",
+    a: "Sí, enviamos a todo Chile con costo según tu región. Si prefieres, al comprar puedes elegir retiro en tienda, que es gratis: te avisamos cuando tu pedido esté listo para coordinar el retiro.",
   },
   {
     q: "¿Cómo envío mi diseño, foto o logo?",
