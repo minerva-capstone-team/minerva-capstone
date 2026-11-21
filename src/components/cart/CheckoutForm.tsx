@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
 import { PICKUP, REGIONS } from "@/lib/regions";
+import { pickupAddress } from "@/lib/site";
 import { placeOrder } from "@/lib/orders";
 import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -281,7 +282,7 @@ export function CheckoutForm() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Forma de entrega">
             {(
               [
-                { id: "retiro", title: "Retiro en tienda", text: "Gratis. Te avisamos cuando esté listo." },
+                { id: "retiro", title: "Retiro en tienda", text: `Gratis, en ${pickupAddress}.` },
                 { id: "envio", title: "Envío a domicilio", text: "A todo Chile, costo según tu región." },
               ] as const
             ).map((o) => (
@@ -302,7 +303,7 @@ export function CheckoutForm() {
           </div>
           {delivery === "retiro" && (
             <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink-2">
-              Retiras tu pedido sin costo en el taller de Minerva. Cuando esté listo te escribimos por WhatsApp o correo para coordinar el día, el horario y la dirección de retiro.
+              Retiras tu pedido sin costo en <strong>{pickupAddress}</strong>. Cuando esté listo te escribimos por WhatsApp o correo para coordinar el día y el horario de retiro.
             </p>
           )}
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
