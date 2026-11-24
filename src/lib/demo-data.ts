@@ -62,6 +62,8 @@ export const demoProducts: Product[] = seeds.map((s, i) => {
   return {
     ...rest,
     active: true,
+    requires_image: ['tazon-magico', 'cuadro-tipo-piedra-19x14-cm', 'placa-mascotas', 'fotografias-10x14-cm-100-unid', 'fotografias-13x18-cm-100-unid', 'calendario-polaroid-10x14-cm', 'mini-calendario-imantado-7x12-cm-100-unid'].includes(s.slug),
+    mockup_url: null,
     category: s.category_id ? cat(s.category_id) : null,
     images: [],
     variants: v ? variants(s.id, v) : [],

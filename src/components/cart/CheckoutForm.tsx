@@ -5,9 +5,8 @@ import { useEffect, useState } from "react";
 import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
 import { PICKUP, REGIONS } from "@/lib/regions";
-import { pickupAddress } from "@/lib/site";
 import { placeOrder } from "@/lib/orders";
-import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines } from "@/lib/checkout";
+import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines, usePickup } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { clearCoupon, readCoupon } from "@/lib/coupon-link";
 import { useSession } from "@/lib/use-session";
@@ -58,6 +57,10 @@ export function CheckoutForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [method, setMethod] = useState<PaymentMethodId>("whatsapp");
   const [delivery, setDelivery] = useState<Delivery>("envio");
+  const pickup = usePickup();
+  useEffect(() => {
+    if (!pickup.enabled) setDelivery("envio");
+  }, [pickup.enabled]);
   const shipRegion = delivery === "retiro" ? PICKUP : data.region;
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -282,10 +285,12 @@ export function CheckoutForm() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Forma de entrega">
             {(
               [
-                { id: "retiro", title: "Retiro en tienda", text: `Gratis, en ${pickupAddress}.` },
+                { id: "retiro", title: "Retiro en tienda", text: `Gratis, en ${pickup.address}.` },
                 { id: "envio", title: "Envío a domicilio", text: "A todo Chile, costo según tu región." },
               ] as const
-            ).map((o) => (
+            )
+              .filter((o) => o.id === "envio" || pickup.enabled)
+              .map((o) => (
               <label
                 key={o.id}
                 className={cn(
@@ -303,7 +308,7 @@ export function CheckoutForm() {
           </div>
           {delivery === "retiro" && (
             <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink-2">
-              Retiras tu pedido sin costo en <strong>{pickupAddress}</strong>. Cuando esté listo te escribimos por WhatsApp o correo para coordinar el día y el horario de retiro.
+              Retiras tu pedido sin costo en <strong>{pickup.address}</strong>. {pickup.note ?? "Cuando esté listo te escribimos por WhatsApp o correo para coordinar el día y el horario de retiro."}
             </p>
           )}
           <div className="mt-6 grid gap-5 sm:grid-cols-2">

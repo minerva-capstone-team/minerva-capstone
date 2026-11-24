@@ -64,6 +64,10 @@ export interface Product {
   preparation_days: number;
   preview_kind: PreviewKind;
   placeholder_art: ArtKey | null;
+  /** El cliente debe subir su imagen para poder comprarlo. */
+  requires_image?: boolean;
+  /** Foto del producto en blanco que se usa de fondo en la vista previa. */
+  mockup_url?: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
   created_at: string;

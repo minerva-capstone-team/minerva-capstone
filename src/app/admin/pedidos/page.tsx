@@ -11,6 +11,7 @@ import { waTo } from "@/lib/whatsapp";
 import { AdminHeader } from "@/components/admin/AdminShell";
 import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
 import { DesignProofsSection, GiftSection, type ProofRow } from "@/components/admin/OrderExtras";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface OrderRow {
   id: string;
@@ -88,6 +89,19 @@ function AdminOrders() {
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [filter, setFilter] = useState<string>("todos");
   const [open, setOpen] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<OrderRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const removeOrder = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
+    const { error } = await adminDb().from("orders").delete().eq("id", toDelete.id);
+    setDeleting(false);
+    if (error) return toast({ title: "No se pudo eliminar", description: errorMessage(error), tone: "error" });
+    toast({ title: `Pedido ${toDelete.order_number} eliminado` });
+    setOrders((list) => (list ?? []).filter((x) => x.id !== toDelete.id));
+    setToDelete(null);
+  };
   const wanted = params.get("pedido");
 
   const load = useCallback(async () => {
@@ -260,9 +274,7 @@ function AdminOrders() {
                           </p>
                           <p className="break-all text-ink-soft">{c.email}</p>
                           <p className="text-ink-soft">{c.phone}</p>
-                          <p className="mt-1 text-ink-soft">
-                            {c.address}, {c.comuna}, {c.region}
-                          </p>
+                          <p className="mt-1 text-ink-soft">{c.region === "Retiro en tienda" ? "🏪 Retiro en tienda (gratis)" : `${c.address}, ${c.comuna}, ${c.region}`}</p>
                           <a
                             href={waTo(c.phone, `Hola ${c.first_name} 👋 Te escribimos de Minerva por tu pedido ${o.order_number}.`)}
                             target="_blank"
@@ -376,6 +388,9 @@ function AdminOrders() {
                             <WhatsAppIcon /> Avisar estado por WhatsApp
                           </a>
                         )}
+                        <button type="button" onClick={() => setToDelete(o)} className="btn w-full border border-m-red/30 text-m-red hover:bg-m-red/5">
+                          <Icon name="trash" size={18} /> Eliminar pedido
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -385,6 +400,16 @@ function AdminOrders() {
           })}
         </ul>
       )}
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        title={`¿Eliminar el pedido ${toDelete?.order_number ?? ""}?`}
+        description="Se borra el pedido con sus productos y no se puede deshacer. Úsalo para pedidos de prueba o duplicados; para un pedido real es mejor cambiar su estado a Cancelado."
+        confirmLabel="Eliminar"
+        busyLabel="Eliminando…"
+        busy={deleting}
+        onCancel={() => setToDelete(null)}
+        onConfirm={() => void removeOrder()}
+      />
     </>
   );
 }

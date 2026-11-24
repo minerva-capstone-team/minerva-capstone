@@ -12,6 +12,8 @@ import { MugPreview, ProductArt, type MugPrint } from "./ProductArt";
 
 export interface PreviewProps {
   print: MugPrint;
+  /** Foto del producto en blanco subida en el panel (reemplaza el dibujo). */
+  mockup?: string | null;
   variantName: string | null;
   art: ArtKey | null;
   productName: string;
@@ -112,6 +114,19 @@ function GenericRenderer({ print, art, productName }: PreviewProps) {
   );
 }
 
+function MockupRenderer({ print, productName, mockup }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <div className="relative h-full w-full">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={mockup ?? ""} alt="" className="absolute inset-0 h-full w-full object-contain" />
+      <svg viewBox="0 0 400 500" className="absolute inset-0 h-full w-full" role="img" aria-label={`Vista previa de ${productName}`}>
+        <PrintContent id={id} print={print} x={135} y={175} w={130} h={150} />
+      </svg>
+    </div>
+  );
+}
+
 const renderers: Record<PreviewKind, (p: PreviewProps) => ReactNode> = {
   mug: MugRenderer,
   notebook: NotebookRenderer,
@@ -120,6 +135,7 @@ const renderers: Record<PreviewKind, (p: PreviewProps) => ReactNode> = {
 };
 
 export function CustomizationPreview({ kind, ...props }: PreviewProps & { kind: PreviewKind }) {
+  if (props.mockup) return <MockupRenderer {...props} />;
   const Renderer = renderers[kind] ?? renderers.generic;
   return <Renderer {...props} />;
 }

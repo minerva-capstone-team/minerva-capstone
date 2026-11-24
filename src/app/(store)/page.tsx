@@ -1,5 +1,5 @@
 import { getCategories, getProducts } from "@/lib/catalog";
-import { Hero } from "@/components/home/Hero";
+import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { Marquee } from "@/components/home/Marquee";
 import { Categories } from "@/components/home/Categories";
 import { ProductsSection } from "@/components/home/ProductsSection";
@@ -24,7 +24,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero />
+      <HeroCarousel />
       <Marquee />
       <Categories categories={categories} counts={counts} />
       <SeasonSpotlight products={products} />

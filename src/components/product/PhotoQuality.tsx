@@ -14,7 +14,12 @@ export function PhotoQuality({ quality }: { quality: ImageQuality }) {
       <span aria-hidden className="mt-px font-bold">
         {ICON[quality.level]}
       </span>
-      {quality.message}
+      <span>
+        {quality.message}
+        {quality.level !== "good" && (
+          <span className="mt-1 block text-xs opacity-80">Es solo un aviso: puedes continuar igual. Antes de imprimir revisamos tu imagen y te enviamos el diseño para aprobar.</span>
+        )}
+      </span>
     </p>
   );
 }

@@ -31,6 +31,8 @@ interface Form {
   placeholder_art: ArtKey | "";
   featured: boolean;
   customizable: boolean;
+  requires_image: boolean;
+  mockup_url: string | null;
   active: boolean;
 }
 
@@ -48,6 +50,8 @@ const EMPTY: Form = {
   placeholder_art: "",
   featured: false,
   customizable: true,
+  requires_image: false,
+  mockup_url: null,
   active: true,
 };
 
@@ -111,6 +115,8 @@ export function ProductEditor({ id }: { id: string | null }) {
           placeholder_art: data.placeholder_art ?? "",
           featured: data.featured,
           customizable: data.customizable,
+          requires_image: Boolean(data.requires_image),
+          mockup_url: data.mockup_url ?? null,
           active: data.active,
         });
         setImages([...(data.images as ImageRow[])].sort((a, b) => a.position - b.position));
@@ -155,6 +161,8 @@ export function ProductEditor({ id }: { id: string | null }) {
       placeholder_art: form.placeholder_art || null,
       featured: form.featured,
       customizable: form.customizable,
+      requires_image: form.requires_image,
+      mockup_url: form.mockup_url,
       active: form.active,
     };
     try {
@@ -440,6 +448,40 @@ export function ProductEditor({ id }: { id: string | null }) {
               </select>
             </div>
             <div>
+              <span className="label">Foto base de la vista previa (producto en blanco)</span>
+              <p className="mb-2 text-xs text-ink-soft">Sube una foto del producto sin estampar y de fondo claro: el diseño del cliente se dibuja encima, al centro. Reemplaza el dibujo.</p>
+              {form.mockup_url ? (
+                <div className="flex items-center gap-3 rounded-2xl border border-line p-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.mockup_url} alt="" className="size-14 rounded-xl object-contain" />
+                  <span className="min-w-0 flex-1 text-sm text-ink-soft">Foto base cargada</span>
+                  <button type="button" className="text-sm text-ink-soft hover:text-m-red" onClick={() => set("mockup_url", null)}>
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line px-4 py-4 text-sm font-medium text-ink-2 hover:bg-paper">
+                  <Icon name="upload" size={18} /> Subir foto base
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { url } = await uploadPublicImage(file, "mockups");
+                        set("mockup_url", url);
+                        toast({ title: "Foto base cargada", description: "Guarda el producto para aplicarla." });
+                      } catch (err) {
+                        toast({ title: "No se pudo subir", description: errorMessage(err), tone: "error" });
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            <div>
               <label htmlFor="f-art" className="label">
                 Ilustración si no hay fotos
               </label>
@@ -459,6 +501,12 @@ export function ProductEditor({ id }: { id: string | null }) {
             <Check checked={form.active} onChange={(v) => set("active", v)} label="Activo" hint="Visible en la tienda." />
             <Check checked={form.featured} onChange={(v) => set("featured", v)} label="Destacado" hint="Aparece en la portada y favoritos." />
             <Check checked={form.customizable} onChange={(v) => set("customizable", v)} label="Personalizable" hint="Muestra el formulario y la vista previa." />
+            <Check
+              checked={form.requires_image}
+              onChange={(v) => set("requires_image", v)}
+              label="Pedir imagen al cliente (obligatoria)"
+              hint="No se puede comprar sin subir su foto o diseño (ej. placas, cuadros, fotos)."
+            />
           </section>
 
           {id && (
