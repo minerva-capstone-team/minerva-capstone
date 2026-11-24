@@ -24,7 +24,7 @@ interface Card {
 
 const COLUMNS: { status: OrderStatus; title: string; hint: string }[] = [
   { status: "pendiente", title: "Por confirmar", hint: "Pago y detalles por coordinar" },
-  { status: "confirmado", title: "Confirmado", hint: "Listo para empezar" },
+  { status: "confirmado", title: "Pagado", hint: "Listo para empezar" },
   { status: "en_produccion", title: "En producción", hint: "Estampando y armando" },
   { status: "listo", title: "Listo", hint: "Embalado para despacho" },
   { status: "entregado", title: "Entregado", hint: "Últimos 14 días" },

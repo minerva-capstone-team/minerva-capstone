@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/format";
 
@@ -25,6 +25,10 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  // /cuenta?modo=crear abre directo la pestaña "Crear cuenta"
+  useEffect(() => {
+    if (allowSignUp && new URLSearchParams(window.location.search).get("modo") === "crear") setMode("signup");
+  }, [allowSignUp]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
