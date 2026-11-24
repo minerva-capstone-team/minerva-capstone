@@ -268,7 +268,7 @@ export function ProductDetail({ product }: { product: Product }) {
                   <Icon name="sparkle" size={18} className="-mt-1 mr-1.5 inline text-m-magenta" />
                   Personalízalo
                 </h2>
-                <span className="text-xs text-ink-soft">Opcional</span>
+                {product.requires_image ? <span className="text-xs font-semibold text-m-red">Imagen obligatoria</span> : <span className="text-xs text-ink-soft">Opcional</span>}
               </div>
               <div className="mt-5 space-y-4">
                 <div>
