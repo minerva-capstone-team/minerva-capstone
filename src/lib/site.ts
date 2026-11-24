@@ -35,6 +35,9 @@ export function buildNav(categories: { name: string; slug: string; description: 
   return nav.map((item) => (item.href === "/productos" && children.length ? { ...item, children } : item));
 }
 
+/** Dirección donde se retiran los pedidos (opción "Retiro en tienda", gratis). */
+export const pickupAddress = "Rodolfo Jaramillo 2723, Padre Hurtado";
+
 export const nav: NavItem[] = [
   {
     label: "Productos",

@@ -5,7 +5,7 @@ const VALUES: { icon: IconName; title: string; text: string; color: string }[] =
   { icon: "brush", title: "Diseño a tu medida", text: "Te ayudamos a bajar tu idea a un diseño que se vea increíble impreso.", color: "text-m-magenta" },
   { icon: "heart", title: "Hecho con dedicación", text: "Cada pieza se estampa y revisa a mano, una por una.", color: "text-m-red" },
   { icon: "box", title: "Empaque con cariño", text: "Tus pedidos llegan protegidos y listos para regalar.", color: "text-m-violet" },
-  { icon: "truck", title: "Envíos a todo Chile", text: "Coordinamos el despacho a tu comuna o retiro.", color: "text-m-blue" },
+  { icon: "truck", title: "Envíos a todo Chile", text: "Despacho a tu comuna o retiro gratis en nuestro taller.", color: "text-m-blue" },
 ];
 
 export function About() {

@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
-import { REGIONS } from "@/lib/regions";
+import { PICKUP, REGIONS } from "@/lib/regions";
+import { pickupAddress } from "@/lib/site";
 import { placeOrder } from "@/lib/orders";
 import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -32,15 +33,19 @@ function validateBilling(b: BillingData): BillingErrors {
   return e;
 }
 
-function validate(c: CheckoutCustomer): Errors {
+type Delivery = "envio" | "retiro";
+
+function validate(c: CheckoutCustomer, delivery: Delivery): Errors {
   const e: Errors = {};
   if (!c.first_name.trim()) e.first_name = "Ingresa tu nombre.";
   if (!c.last_name.trim()) e.last_name = "Ingresa tu apellido.";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email.trim())) e.email = "Ingresa un email válido.";
   if (c.phone.replace(/\D/g, "").length < 8) e.phone = "Ingresa un teléfono válido (ej: +56 9 1234 5678).";
-  if (!c.address.trim()) e.address = "Ingresa tu dirección.";
-  if (!c.comuna.trim()) e.comuna = "Ingresa tu comuna.";
-  if (!c.region) e.region = "Selecciona tu región.";
+  if (delivery === "envio") {
+    if (!c.address.trim()) e.address = "Ingresa tu dirección.";
+    if (!c.comuna.trim()) e.comuna = "Ingresa tu comuna.";
+    if (!c.region) e.region = "Selecciona tu región.";
+  }
   return e;
 }
 
@@ -52,6 +57,8 @@ export function CheckoutForm() {
   const [data, setData] = useState<CheckoutCustomer>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [method, setMethod] = useState<PaymentMethodId>("whatsapp");
+  const [delivery, setDelivery] = useState<Delivery>("envio");
+  const shipRegion = delivery === "retiro" ? PICKUP : data.region;
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [placed, setPlaced] = useState(false);
@@ -130,19 +137,19 @@ export function CheckoutForm() {
     if (!hydrated || !isSupabaseConfigured || total <= 0) return;
     let alive = true;
     const t = setTimeout(() => {
-      quoteCheckout(total, data.region, coupon, JSON.parse(linesKey), data.email).then((q) => alive && setQuote(q));
+      quoteCheckout(total, shipRegion, coupon, JSON.parse(linesKey), data.email).then((q) => alive && setQuote(q));
     }, 250);
     return () => {
       alive = false;
       clearTimeout(t);
     };
-  }, [hydrated, total, linesKey, data.region, data.email, coupon]);
+  }, [hydrated, total, linesKey, shipRegion, data.email, coupon]);
 
   const couponRejected = Boolean(coupon) && quote?.coupon_valid === false;
   const discount = quote?.discount ?? 0;
   const grandTotal = quote ? quote.total : total;
   const missingForFree =
-    quote?.free_shipping_min != null && !quote.free_shipping && !quote.shipping_pending ? Math.max(quote.free_shipping_min - (total - discount), 0) : 0;
+    delivery === "envio" && quote?.free_shipping_min != null && !quote.free_shipping && !quote.shipping_pending ? Math.max(quote.free_shipping_min - (total - discount), 0) : 0;
 
   const set =(k: keyof CheckoutCustomer) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setData((d) => ({ ...d, [k]: e.target.value }));
@@ -152,7 +159,7 @@ export function CheckoutForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setServerError(null);
-    const errs = validate(data);
+    const errs = validate(data, delivery);
     setErrors(errs);
     const first = Object.keys(errs)[0];
     if (first) {
@@ -174,7 +181,8 @@ export function CheckoutForm() {
     }
     setSubmitting(true);
     try {
-      const order = await placeOrder(items, data, method, {
+      const customer = delivery === "retiro" ? { ...data, address: PICKUP, comuna: PICKUP, region: PICKUP } : data;
+      const order = await placeOrder(items, customer, method, {
         coupon: quote?.coupon_valid ? coupon : "",
         documentType,
         billing: documentType === "factura" ? billing : null,
@@ -271,9 +279,37 @@ export function CheckoutForm() {
         <fieldset className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
           <legend className="sr-only">Entrega</legend>
           <h2 className="display text-2xl">Entrega</h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Forma de entrega">
+            {(
+              [
+                { id: "retiro", title: "Retiro en tienda", text: `Gratis, en ${pickupAddress}.` },
+                { id: "envio", title: "Envío a domicilio", text: "A todo Chile, costo según tu región." },
+              ] as const
+            ).map((o) => (
+              <label
+                key={o.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                  delivery === o.id ? "border-ink bg-paper" : "border-line hover:border-ink/40",
+                )}
+              >
+                <input type="radio" name="delivery" className="mt-1 size-4 accent-[var(--color-ink)]" checked={delivery === o.id} onChange={() => setDelivery(o.id)} />
+                <span>
+                  <span className="block font-semibold">{o.title}</span>
+                  <span className="block text-sm text-ink-soft">{o.text}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {delivery === "retiro" && (
+            <p className="mt-5 rounded-2xl bg-paper p-4 text-sm text-ink-2">
+              Retiras tu pedido sin costo en <strong>{pickupAddress}</strong>. Cuando esté listo te escribimos por WhatsApp o correo para coordinar el día y el horario de retiro.
+            </p>
+          )}
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            {field("address", "Dirección", { autoComplete: "street-address", placeholder: "Calle, número, depto." }, "sm:col-span-2")}
-            {field("comuna", "Comuna", { autoComplete: "address-level2" })}
+            {delivery === "envio" && field("address", "Dirección", { autoComplete: "street-address", placeholder: "Calle, número, depto." }, "sm:col-span-2")}
+            {delivery === "envio" && field("comuna", "Comuna", { autoComplete: "address-level2" })}
+            {delivery === "envio" && (
             <div>
               <label htmlFor="co-region" className="label">
                 Región
@@ -286,6 +322,7 @@ export function CheckoutForm() {
                 ))}
               </select>
             </div>
+            )}
             <div className="sm:col-span-2">
               <label htmlFor="co-notes" className="label">
                 Notas <span className="font-normal text-ink-soft">(opcional)</span>
@@ -502,16 +539,16 @@ export function CheckoutForm() {
               </div>
             )}
             <div className="flex justify-between">
-              <dt className="text-ink-soft">Envío</dt>
+              <dt className="text-ink-soft">{delivery === "retiro" ? "Retiro en tienda" : "Envío"}</dt>
               <dd className="tabular-nums">
-                {!quote || quote.shipping_pending ? "Se coordina por WhatsApp" : quote.shipping > 0 ? formatCLP(quote.shipping) : "Gratis"}
+                {delivery === "retiro" ? "Gratis" : !quote || quote.shipping_pending ? "Se coordina por WhatsApp" : quote.shipping > 0 ? formatCLP(quote.shipping) : "Gratis"}
               </dd>
             </div>
             {missingForFree > 0 && (
               <p className="rounded-xl bg-m-green/10 px-3 py-2 text-[#1c6b51]">Te faltan {formatCLP(missingForFree)} para tener envío gratis.</p>
             )}
             <div className="flex items-baseline justify-between border-t border-line pt-3">
-              <dt className="font-semibold">Total{!quote || quote.shipping_pending ? " (sin envío)" : ""}</dt>
+              <dt className="font-semibold">Total{delivery === "envio" && (!quote || quote.shipping_pending) ? " (sin envío)" : ""}</dt>
               <dd className="display text-2xl tabular-nums">{formatCLP(grandTotal)}</dd>
             </div>
           </dl>
