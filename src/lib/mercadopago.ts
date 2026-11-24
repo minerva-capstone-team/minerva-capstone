@@ -80,6 +80,11 @@ export interface MpPayment {
   external_reference: string | null;
   transaction_amount: number;
   currency_id: string;
+  date_approved?: string | null;
+  payment_type_id?: string | null;
+  payment_method_id?: string | null;
+  installments?: number | null;
+  card?: { last_four_digits?: string | null } | null;
 }
 
 export const getPayment = (id: string) => mp<MpPayment>(`/v1/payments/${encodeURIComponent(id)}`);
