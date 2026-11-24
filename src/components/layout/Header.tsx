@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { NavItem } from "@/lib/site";
 import { cartCount, useCart, useUI } from "@/lib/stores";
+import { useSession } from "@/lib/use-session";
 import { cn } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { Logo } from "./Logo";
@@ -16,6 +17,7 @@ export function Header({ nav }: { nav: NavItem[] }) {
   const pathname = usePathname();
   const count = useCart((s) => cartCount(s.items));
   const { open, overlay } = useUI();
+  const session = useSession();
 
   useEffect(() => {
     setMounted(true);
@@ -95,11 +97,11 @@ export function Header({ nav }: { nav: NavItem[] }) {
             <Icon name="search" />
           </button>
           <Link
-            href="/cuenta"
-            className="hidden size-11 place-items-center rounded-full transition-colors hover:bg-ink/5 sm:grid"
-            aria-label="Mi cuenta"
+            href={session ? "/cuenta" : "/cuenta?modo=crear"}
+            className="mx-0.5 inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-3 text-xs font-semibold text-white transition-colors hover:bg-ink/85 sm:h-10 sm:px-4 sm:text-sm"
           >
-            <Icon name="user" />
+            <Icon name="user" size={16} />
+            {session ? "Mi cuenta" : "Crear cuenta"}
           </Link>
           <button
             type="button"

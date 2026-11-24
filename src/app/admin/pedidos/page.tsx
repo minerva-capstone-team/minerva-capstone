@@ -165,6 +165,8 @@ function AdminOrders() {
   };
 
   const update = async (o: OrderRow, values: Partial<Pick<OrderRow, "status" | "payment_status" | "delivery_status" | "tracking_code" | "document_number" | "document_url" | "document_issued_at" | "paid_at">>) => {
+    // Pasar el pedido a "Pagado" también marca el pago como pagado.
+    if (values.status === "confirmado" && o.payment_status !== "pagado") values = { ...values, payment_status: "pagado" };
     if (values.payment_status === "pagado" && !o.paid_at) values = { ...values, paid_at: new Date().toISOString() };
     setOrders((list) => list?.map((x) => (x.id === o.id ? { ...x, ...values } : x)) ?? null);
     const { error } = await adminDb().from("orders").update(values).eq("id", o.id);
@@ -481,7 +483,7 @@ function AdminOrders() {
       <ConfirmDialog
         open={Boolean(toDelete)}
         title={`¿Eliminar el pedido ${toDelete?.order_number ?? ""}?`}
-        description="Se borra el pedido con sus productos y no se puede deshacer. Úsalo para pedidos de prueba o duplicados; para un pedido real es mejor cambiar su estado a Cancelado."
+        description="Se borra el pedido con sus productos y no se puede deshacer. Úsalo para pedidos de prueba o duplicados; para un pedido real es mejor cambiar su estado a Anulado."
         confirmLabel="Eliminar"
         busyLabel="Eliminando…"
         busy={deleting}
