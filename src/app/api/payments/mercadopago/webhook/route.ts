@@ -6,6 +6,7 @@ import { formatCLP } from "@/lib/format";
 import { site } from "@/lib/site";
 import { canEmailCustomers, sendNoticeEmail } from "@/lib/email";
 import { noticeFor, type NotifyOrder } from "@/lib/order-notify";
+import { paymentSummary } from "@/lib/payment-labels";
 
 /**
  * Aviso de Mercado Pago. No confía en el contenido del aviso: consulta el pago en la API de
@@ -45,9 +46,18 @@ export async function POST(req: NextRequest) {
         await notifyAdmins(`⚠️ <b>Pago con monto distinto</b> en ${esc(order.order_number)}: recibido ${formatCLP(payment.transaction_amount)}, pedido ${formatCLP(Number(order.total))}. Revísalo en Mercado Pago (pago ${esc(payment.id)}).`, link);
         return NextResponse.json({ ok: true });
       }
-      const next: Record<string, unknown> = { payment_status: "pagado", payment_provider: "mercadopago", payment_ref: String(payment.id), paid_at: new Date().toISOString() };
+      const next: Record<string, unknown> = { payment_status: "pagado", payment_provider: "mercadopago", payment_ref: String(payment.id), paid_at: payment.date_approved ?? new Date().toISOString() };
       if (order.status === "pendiente") next.status = "confirmado";
-      const { error } = await sb.from("orders").update(next).eq("id", order.id);
+      const details = {
+        payment_type: payment.payment_type_id ?? null,
+        payment_brand: payment.payment_method_id ?? null,
+        payment_installments: payment.installments ?? null,
+        payment_card_last4: payment.card?.last_four_digits ?? null,
+        payment_amount: Math.round(payment.transaction_amount),
+      };
+      let { error } = await sb.from("orders").update({ ...next, ...details }).eq("id", order.id);
+      // Sin la migración 0017 no existen las columnas del detalle: se guarda igual lo esencial.
+      if (error && /payment_(type|brand|installments|card_last4|amount)/.test(error.message)) ({ error } = await sb.from("orders").update(next).eq("id", order.id));
       if (error) {
         console.error("[mercadopago] no se pudo marcar pagado:", error.message);
         return NextResponse.json({ ok: false }, { status: 500 }); // que Mercado Pago reintente
@@ -57,7 +67,7 @@ export async function POST(req: NextRequest) {
       await notifyAdmins(
         cancelled
           ? `⚠️ <b>Pago recibido de un pedido cancelado</b> ${esc(order.order_number)} · ${formatCLP(payment.transaction_amount)}. Revisa stock o devuelve el pago.`
-          : `💳 <b>Pago recibido</b> ${esc(order.order_number)} · ${formatCLP(payment.transaction_amount)}\n${esc(c?.first_name ?? "")} pagó con Mercado Pago. El pedido quedó confirmado.`,
+          : `💳 <b>Pago recibido</b> ${esc(order.order_number)} · ${formatCLP(payment.transaction_amount)}\n${esc(c?.first_name ?? "")} pagó con Mercado Pago (${esc(paymentSummary(payment))}). El pedido quedó confirmado.`,
         link,
       );
       if (!cancelled && c && canEmailCustomers) {

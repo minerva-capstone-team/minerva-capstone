@@ -55,6 +55,10 @@ export function ProductCard({ product, priority, className }: { product: Product
           type="button"
           disabled={stock.tone === "out"}
           onClick={() => {
+            if (product.requires_image) {
+              window.location.assign(`/productos/${product.slug}#personalizar`);
+              return;
+            }
             if (addToCart(product, { variant: product.variants[0] ?? null })) {
               setAdded(true);
               setTimeout(() => setAdded(false), 1600);
@@ -69,7 +73,7 @@ export function ProductCard({ product, priority, className }: { product: Product
           )}
         >
           <Icon name={added ? "check" : "plus"} size={18} />
-          <span className="hidden sm:inline">{stock.tone === "out" ? "Agotado" : added ? "Agregado" : "Agregar"}</span>
+          <span className="hidden sm:inline">{stock.tone === "out" ? "Agotado" : product.requires_image ? "Personalizar" : added ? "Agregado" : "Agregar"}</span>
         </button>
       </div>
 

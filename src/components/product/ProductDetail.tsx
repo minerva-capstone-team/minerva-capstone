@@ -167,6 +167,8 @@ export function ProductDetail({ product }: { product: Product }) {
     setFixes([]);
   };
 
+  const needImage = Boolean(product.customizable && product.requires_image && !image);
+
   const onAdd = () => {
     if (addToCart(product, { variant, quantity, customization })) {
       setJustAdded(true);
@@ -293,7 +295,8 @@ export function ProductDetail({ product }: { product: Product }) {
                   />
                 </div>
                 <div>
-                  <span className="label">Imagen, foto o logo</span>
+                  <span className="label">Imagen, foto o logo{product.requires_image ? " (obligatoria)" : ""}</span>
+                  {product.requires_image && !image && <p className="mb-2 text-sm text-ink-soft">Este producto se hace con tu foto o diseño: súbela para poder agregarlo al carrito.</p>}
                   <input
                     ref={fileRef}
                     id="p-file"
@@ -354,12 +357,12 @@ export function ProductDetail({ product }: { product: Product }) {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={setQuantity} max={Math.max(1, available)} />
-            <button type="button" onClick={onAdd} disabled={available <= 0} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
+            <button type="button" onClick={onAdd} disabled={available <= 0 || needImage} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
               <Icon name={justAdded ? "check" : "bag"} size={20} />
-              {product.stock <= 0 || variant?.stock === 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
+              {needImage ? "Sube tu imagen para continuar" : product.stock <= 0 || variant?.stock === 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
             </button>
           </div>
-          <button type="button" onClick={onBuyNow} disabled={available <= 0} className="btn btn-ghost mt-3 h-14 w-full text-base">
+          <button type="button" onClick={onBuyNow} disabled={available <= 0 || needImage} className="btn btn-ghost mt-3 h-14 w-full text-base">
             Comprar ahora
           </button>
           <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-3 h-14 w-full text-base">
@@ -384,7 +387,7 @@ export function ProductDetail({ product }: { product: Product }) {
                 <Icon name="down" size={18} className="transition-transform group-open:rotate-180" />
               </summary>
               <p className="pb-4 text-ink-soft">
-                Enviamos a todo Chile. Una vez listo tu pedido ({product.preparation_days} días hábiles aprox.) coordinamos el despacho y su costo por WhatsApp.
+                Puedes retirarlo gratis en nuestro taller o pedir envío a todo Chile. Una vez listo tu pedido ({product.preparation_days} días hábiles aprox.) te avisamos para coordinar el retiro o el despacho.
               </p>
             </details>
           </div>
@@ -413,6 +416,7 @@ export function ProductDetail({ product }: { product: Product }) {
                 variantName={variant?.name ?? null}
                 art={product.placeholder_art}
                 productName={product.name}
+                mockup={product.mockup_url}
               />
             </div>
           </div>

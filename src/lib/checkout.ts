@@ -1,4 +1,5 @@
 "use client";
+import { pickupAddress } from "./site";
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "./supabase/client";
 import type { CheckoutQuote } from "./types";
@@ -67,6 +68,27 @@ export function useFreeShippingMin() {
     };
   }, []);
   return min;
+}
+
+/** Configuración del retiro en tienda (panel > Envíos). Sin base de datos usa la dirección por defecto. */
+export function usePickup() {
+  const [pickup, setPickup] = useState<{ enabled: boolean; address: string; note: string | null }>({ enabled: true, address: pickupAddress, note: null });
+  useEffect(() => {
+    const sb = getBrowserSupabase();
+    if (!sb) return;
+    let alive = true;
+    sb.from("store_settings")
+      .select("pickup_enabled,pickup_address,pickup_note")
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!alive || error || !data) return;
+        setPickup({ enabled: data.pickup_enabled !== false, address: (data.pickup_address as string) || pickupAddress, note: (data.pickup_note as string | null) ?? null });
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return pickup;
 }
 
 /** Deja solo dígitos y K, y formatea como 12.345.678-5. */

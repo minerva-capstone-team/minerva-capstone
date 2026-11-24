@@ -55,6 +55,15 @@ export default function AdminInstagramAccounts() {
   const [filter, setFilter] = useState<Status | "todas">("por_aprobar");
   const [busy, setBusy] = useState<string | null>(null);
   const [toReject, setToReject] = useState<Signup | null>(null);
+  const [toRemove, setToRemove] = useState<Signup | null>(null);
+  const remove = async () => {
+    if (!toRemove) return;
+    const { error } = await adminDb().from("instagram_signups").delete().eq("id", toRemove.id);
+    if (error) return toast({ title: "No se pudo eliminar", description: error.message, tone: "error" });
+    toast({ title: "Solicitud eliminada" });
+    setToRemove(null);
+    void load();
+  };
 
   const load = useCallback(async () => {
     const sb = adminDb();
@@ -196,6 +205,11 @@ export default function AdminInstagramAccounts() {
                 )}
 
                 {r.status === "rechazada" && <p className="mt-4 text-xs text-ink-soft">{r.decided_at ? `Rechazada ${ago(r.decided_at)}. ` : ""}No se creó cuenta ni se envió correo.</p>}
+                {r.status !== "por_aprobar" && (
+                  <button type="button" onClick={() => setToRemove(r)} className="mt-3 self-start text-xs font-medium text-ink-soft hover:text-m-red">
+                    Eliminar de la lista
+                  </button>
+                )}
               </li>
             );
           })}
@@ -211,6 +225,15 @@ export default function AdminInstagramAccounts() {
         busy={Boolean(toReject && busy === toReject.id)}
         onCancel={() => setToReject(null)}
         onConfirm={() => toReject && void decide(toReject, "reject")}
+      />
+      <ConfirmDialog
+        open={Boolean(toRemove)}
+        title="¿Eliminar esta solicitud?"
+        description={`Se borra el registro de ${toRemove?.email ?? ""}. No afecta la cuenta ni el cupón si ya se crearon.`}
+        confirmLabel="Eliminar"
+        busyLabel="Eliminando…"
+        onCancel={() => setToRemove(null)}
+        onConfirm={() => void remove()}
       />
     </>
   );

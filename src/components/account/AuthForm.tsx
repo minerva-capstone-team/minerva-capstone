@@ -4,12 +4,18 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/format";
 
 const translate = (msg: string) => {
-  if (/invalid login/i.test(msg)) return "Email o contraseña incorrectos.";
+  if (/invalid login/i.test(msg)) return "Usuario, email o contraseña incorrectos.";
   if (/already registered/i.test(msg)) return "Ya existe una cuenta con ese email. Inicia sesión.";
   if (/password should be at least/i.test(msg)) return "La contraseña debe tener al menos 6 caracteres.";
   if (/email not confirmed/i.test(msg)) return "Confirma tu email desde el correo que te enviamos.";
   if (/rate limit/i.test(msg)) return "Demasiados intentos. Espera unos minutos.";
   return "No pudimos completar la acción. Intenta nuevamente.";
+};
+
+/** Permite entrar con un nombre de usuario: "guti" equivale a guti@minerva-arteycolor.cl. */
+const loginEmail = (value: string) => {
+  const v = value.trim();
+  return v.includes("@") ? v : `${v.toLowerCase()}@minerva-arteycolor.cl`;
 };
 
 export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean; title?: string }) {
@@ -29,7 +35,7 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
     setInfo(null);
     const { data, error } =
       mode === "login"
-        ? await sb.auth.signInWithPassword({ email: email.trim(), password })
+        ? await sb.auth.signInWithPassword({ email: loginEmail(email), password })
         : await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${window.location.origin}/cuenta` } });
     setLoading(false);
     if (error) setError(translate(error.message));
@@ -62,9 +68,9 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
       <div className={cn("space-y-4", title && "mt-6")}>
         <div>
           <label htmlFor="auth-email" className="label">
-            Email
+            {mode === "login" ? "Email o usuario" : "Email"}
           </label>
-          <input id="auth-email" type="email" required autoComplete="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input id="auth-email" type={mode === "login" ? "text" : "email"} required autoComplete={mode === "login" ? "username" : "email"} autoCapitalize="none" className="field" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
           <label htmlFor="auth-pass" className="label">

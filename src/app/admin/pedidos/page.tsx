@@ -5,12 +5,14 @@ import { adminDb, errorMessage, notifyCustomer } from "@/lib/admin";
 import { UPLOADS_BUCKET } from "@/lib/supabase/config";
 import { cn, formatCLP } from "@/lib/format";
 import { orderStatusLabel } from "@/lib/order-status";
+import { paymentBrandLabel, paymentTypeLabel } from "@/lib/payment-labels";
 import { noticeFor, whatsappNotice, type NotifyKind } from "@/lib/order-notify";
 import { toast } from "@/lib/stores";
 import { waTo } from "@/lib/whatsapp";
 import { AdminHeader } from "@/components/admin/AdminShell";
 import { Icon, WhatsAppIcon } from "@/components/ui/Icon";
 import { DesignProofsSection, GiftSection, type ProofRow } from "@/components/admin/OrderExtras";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface OrderRow {
   id: string;
@@ -20,6 +22,14 @@ interface OrderRow {
   payment_status: keyof typeof orderStatusLabel.payment;
   delivery_status: keyof typeof orderStatusLabel.delivery;
   payment_method: string;
+  payment_provider?: string | null;
+  payment_ref?: string | null;
+  paid_at?: string | null;
+  payment_type?: string | null;
+  payment_brand?: string | null;
+  payment_installments?: number | null;
+  payment_card_last4?: string | null;
+  payment_amount?: number | null;
   notes: string | null;
   tracking_code: string | null;
   subtotal: number | null;
@@ -88,6 +98,19 @@ function AdminOrders() {
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [filter, setFilter] = useState<string>("todos");
   const [open, setOpen] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<OrderRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const removeOrder = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
+    const { error } = await adminDb().from("orders").delete().eq("id", toDelete.id);
+    setDeleting(false);
+    if (error) return toast({ title: "No se pudo eliminar", description: errorMessage(error), tone: "error" });
+    toast({ title: `Pedido ${toDelete.order_number} eliminado` });
+    setOrders((list) => (list ?? []).filter((x) => x.id !== toDelete.id));
+    setToDelete(null);
+  };
   const wanted = params.get("pedido");
 
   const load = useCallback(async () => {
@@ -141,7 +164,8 @@ function AdminOrders() {
     });
   };
 
-  const update = async (o: OrderRow, values: Partial<Pick<OrderRow, "status" | "payment_status" | "delivery_status" | "tracking_code" | "document_number" | "document_url" | "document_issued_at">>) => {
+  const update = async (o: OrderRow, values: Partial<Pick<OrderRow, "status" | "payment_status" | "delivery_status" | "tracking_code" | "document_number" | "document_url" | "document_issued_at" | "paid_at">>) => {
+    if (values.payment_status === "pagado" && !o.paid_at) values = { ...values, paid_at: new Date().toISOString() };
     setOrders((list) => list?.map((x) => (x.id === o.id ? { ...x, ...values } : x)) ?? null);
     const { error } = await adminDb().from("orders").update(values).eq("id", o.id);
     if (error) {
@@ -199,7 +223,10 @@ function AdminOrders() {
                     <span className="block text-ink-soft">{c?.comuna}</span>
                   </span>
                   <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", STATUS_COLORS[o.status])}>{orderStatusLabel.status[o.status]}</span>
-                  <span className="text-xs font-medium text-ink-soft">{orderStatusLabel.payment[o.payment_status]}</span>
+                  <span className="text-xs font-medium text-ink-soft">
+                    {o.payment_method === "mercadopago" ? "💳 " : "💬 "}
+                    {orderStatusLabel.payment[o.payment_status]}
+                  </span>
                   {o.document_type === "factura" && <span className="rounded-full bg-m-yellow/20 px-2.5 py-1 text-xs font-semibold text-[#8a5a00]">Factura</span>}
                   <span className="font-semibold tabular-nums">{formatCLP(o.total)}</span>
                   <Icon name="down" size={18} className={cn("transition-transform", expanded && "rotate-180")} />
@@ -260,9 +287,7 @@ function AdminOrders() {
                           </p>
                           <p className="break-all text-ink-soft">{c.email}</p>
                           <p className="text-ink-soft">{c.phone}</p>
-                          <p className="mt-1 text-ink-soft">
-                            {c.address}, {c.comuna}, {c.region}
-                          </p>
+                          <p className="mt-1 text-ink-soft">{c.region === "Retiro en tienda" ? "🏪 Retiro en tienda (gratis)" : `${c.address}, ${c.comuna}, ${c.region}`}</p>
                           <a
                             href={waTo(c.phone, `Hola ${c.first_name} 👋 Te escribimos de Minerva por tu pedido ${o.order_number}.`)}
                             target="_blank"
@@ -273,6 +298,71 @@ function AdminOrders() {
                           </a>
                         </div>
                       )}
+                      <div className="rounded-2xl bg-paper p-4 text-sm">
+                        <h3 className="font-semibold uppercase tracking-wider text-ink-soft">Pago</h3>
+                        <dl className="mt-2 space-y-1">
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-ink-soft">Medio</dt>
+                            <dd className="text-right font-medium">{o.payment_method === "mercadopago" ? "💳 Mercado Pago" : "💬 Coordinado por WhatsApp"}</dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-ink-soft">Estado</dt>
+                            <dd className="text-right font-medium">{orderStatusLabel.payment[o.payment_status]}</dd>
+                          </div>
+                          {o.payment_type && (
+                            <div className="flex justify-between gap-3">
+                              <dt className="text-ink-soft">Tipo</dt>
+                              <dd className="text-right font-medium">
+                                {paymentTypeLabel(o.payment_type)}
+                                {o.payment_brand && o.payment_type !== "account_money" ? ` · ${paymentBrandLabel(o.payment_brand)}` : ""}
+                                {o.payment_card_last4 ? ` ****${o.payment_card_last4}` : ""}
+                              </dd>
+                            </div>
+                          )}
+                          {(o.payment_installments ?? 0) > 0 && (
+                            <div className="flex justify-between gap-3">
+                              <dt className="text-ink-soft">Cuotas</dt>
+                              <dd className="text-right font-medium">{o.payment_installments === 1 ? "1 cuota (sin cuotas)" : `${o.payment_installments} cuotas`}</dd>
+                            </div>
+                          )}
+                          {o.payment_amount != null && (
+                            <div className="flex justify-between gap-3">
+                              <dt className="text-ink-soft">Monto cobrado</dt>
+                              <dd className="text-right font-medium tabular-nums">{formatCLP(o.payment_amount)}</dd>
+                            </div>
+                          )}
+                          {o.paid_at && (
+                            <div className="flex justify-between gap-3">
+                              <dt className="text-ink-soft">Pagado el</dt>
+                              <dd className="text-right font-medium">{new Date(o.paid_at).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" })}</dd>
+                            </div>
+                          )}
+                          {o.payment_ref && (
+                            <div className="flex justify-between gap-3">
+                              <dt className="text-ink-soft">N° operación</dt>
+                              <dd className="text-right">
+                                <button
+                                  type="button"
+                                  className="font-mono font-medium underline decoration-dotted underline-offset-2"
+                                  title="Copiar"
+                                  onClick={() => {
+                                    void navigator.clipboard?.writeText(o.payment_ref ?? "");
+                                    toast({ title: "N° de operación copiado", description: "Búscalo en Mercado Pago → Actividad." });
+                                  }}
+                                >
+                                  {o.payment_ref}
+                                </button>
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
+                        {o.payment_method === "mercadopago" && o.payment_status !== "pagado" && (
+                          <p className="mt-2 text-xs text-ink-soft">Aún no llega la confirmación de Mercado Pago. Si el cliente dice que pagó, revisa tu cuenta antes de despachar.</p>
+                        )}
+                        {o.payment_method !== "mercadopago" && o.payment_status !== "pagado" && (
+                          <p className="mt-2 text-xs text-ink-soft">Cuando confirmes la transferencia, cambia el estado del pago a “Pagado”.</p>
+                        )}
+                      </div>
                       {(
                         [
                           ["status", "Estado", orderStatusLabel.status],
@@ -376,6 +466,9 @@ function AdminOrders() {
                             <WhatsAppIcon /> Avisar estado por WhatsApp
                           </a>
                         )}
+                        <button type="button" onClick={() => setToDelete(o)} className="btn w-full border border-m-red/30 text-m-red hover:bg-m-red/5">
+                          <Icon name="trash" size={18} /> Eliminar pedido
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -385,6 +478,16 @@ function AdminOrders() {
           })}
         </ul>
       )}
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        title={`¿Eliminar el pedido ${toDelete?.order_number ?? ""}?`}
+        description="Se borra el pedido con sus productos y no se puede deshacer. Úsalo para pedidos de prueba o duplicados; para un pedido real es mejor cambiar su estado a Cancelado."
+        confirmLabel="Eliminar"
+        busyLabel="Eliminando…"
+        busy={deleting}
+        onCancel={() => setToDelete(null)}
+        onConfirm={() => void removeOrder()}
+      />
     </>
   );
 }
