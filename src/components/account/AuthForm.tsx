@@ -19,7 +19,7 @@ const loginEmail = (value: string) => {
 };
 
 export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean; title?: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +37,13 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
     setLoading(true);
     setError(null);
     setInfo(null);
+    if (mode === "reset") {
+      const { error: resetError } = await sb.auth.resetPasswordForEmail(loginEmail(email), { redirectTo: `${window.location.origin}/cuenta?modo=nueva` });
+      setLoading(false);
+      if (resetError) setError(translate(resetError.message));
+      else setInfo("Si ese correo está registrado, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.");
+      return;
+    }
     const { data, error } =
       mode === "login"
         ? await sb.auth.signInWithPassword({ email: loginEmail(email), password })
@@ -49,7 +56,7 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
   return (
     <form onSubmit={submit} className="mx-auto w-full max-w-md rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
       {title && <h2 className="display text-2xl">{title}</h2>}
-      {allowSignUp && (
+      {allowSignUp && mode !== "reset" && (
         <div className="mb-6 grid grid-cols-2 rounded-full bg-paper-2 p-1" role="tablist" aria-label="Tipo de acceso">
           {(["login", "signup"] as const).map((m) => (
             <button
@@ -72,10 +79,13 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
       <div className={cn("space-y-4", title && "mt-6")}>
         <div>
           <label htmlFor="auth-email" className="label">
-            {mode === "login" ? "Email o usuario" : "Email"}
+            {mode === "signup" ? "Email" : "Email o usuario"}
           </label>
-          <input id="auth-email" type={mode === "login" ? "text" : "email"} required autoComplete={mode === "login" ? "username" : "email"} autoCapitalize="none" className="field" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input id="auth-email" type={mode === "signup" ? "email" : "text"} required autoComplete={mode === "login" ? "username" : "email"} autoCapitalize="none" className="field" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
+        {mode === "reset" ? (
+          <p className="text-sm text-ink-soft">Escribe el correo con el que te registraste y te enviaremos un enlace para crear una contraseña nueva.</p>
+        ) : (
         <div>
           <label htmlFor="auth-pass" className="label">
             Contraseña
@@ -90,7 +100,21 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          {mode === "login" && (
+            <button
+              type="button"
+              className="mt-2 text-sm font-medium text-ink-2 underline underline-offset-4 hover:text-ink"
+              onClick={() => {
+                setMode("reset");
+                setError(null);
+                setInfo(null);
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
         </div>
+        )}
         {error && (
           <p role="alert" className="rounded-xl bg-m-red/10 p-3 text-sm text-m-red">
             {error}
@@ -102,8 +126,21 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
           </p>
         )}
         <button type="submit" disabled={loading} className="btn btn-primary w-full">
-          {loading ? "Un momento…" : mode === "login" ? "Ingresar" : "Crear cuenta"}
+          {loading ? "Un momento…" : mode === "login" ? "Ingresar" : mode === "reset" ? "Enviar enlace" : "Crear cuenta"}
         </button>
+        {mode === "reset" && (
+          <button
+            type="button"
+            className="w-full text-sm font-medium text-ink-2 underline underline-offset-4 hover:text-ink"
+            onClick={() => {
+              setMode("login");
+              setError(null);
+              setInfo(null);
+            }}
+          >
+            Volver a ingresar
+          </button>
+        )}
       </div>
     </form>
   );
