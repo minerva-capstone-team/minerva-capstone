@@ -5,8 +5,13 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { myCoupons, type MyCoupon } from "@/lib/checkout";
 import { formatCLP } from "@/lib/format";
 
-/** Cuentas creadas desde Instagram entran con una contraseña temporal: aquí la cambian. */
-export function ChangeTempPassword({ onDone }: { onDone: () => void }) {
+/**
+ * Cambiar la contraseña con la sesión iniciada. Se usa en tres casos:
+ * - "temp": cuentas creadas desde Instagram, que entran con una contraseña temporal.
+ * - "recovery": la persona llegó desde el enlace de "¿Olvidaste tu contraseña?".
+ * - "normal": cualquier usuario que quiera cambiarla desde Mi cuenta.
+ */
+export function ChangeTempPassword({ onDone, variant = "temp" }: { onDone: () => void; variant?: "temp" | "recovery" | "normal" }) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
@@ -16,7 +21,7 @@ export function ChangeTempPassword({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (pw.length < 8) return setError("Usa al menos 8 caracteres.");
     if (pw !== pw2) return setError("Las contraseñas no coinciden.");
-    if (/^Minerva-/i.test(pw)) return setError("Elige una contraseña distinta a la temporal.");
+    if (variant === "temp" && /^Minerva-/i.test(pw)) return setError("Elige una contraseña distinta a la temporal.");
     setBusy(true);
     setError(null);
     const { error: err } = await getBrowserSupabase()!.auth.updateUser({ password: pw, data: { must_change_password: false } });
@@ -26,9 +31,15 @@ export function ChangeTempPassword({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <form onSubmit={submit} className="mt-6 rounded-2xl bg-m-yellow/15 p-4">
-      <p className="font-semibold">Crea tu contraseña</p>
-      <p className="mt-1 text-sm text-ink-2">Entraste con una contraseña temporal. Cámbiala por una tuya para proteger tu cuenta.</p>
+    <form onSubmit={submit} className={variant === "normal" ? "mt-4 rounded-2xl bg-paper p-4" : "mt-6 rounded-2xl bg-m-yellow/15 p-4"}>
+      <p className="font-semibold">{variant === "normal" ? "Cambiar contraseña" : variant === "recovery" ? "Crea tu nueva contraseña" : "Crea tu contraseña"}</p>
+      <p className="mt-1 text-sm text-ink-2">
+        {variant === "normal"
+          ? "Escribe tu nueva contraseña dos veces."
+          : variant === "recovery"
+            ? "Llegaste desde el enlace de recuperación. Elige una contraseña nueva para tu cuenta."
+            : "Entraste con una contraseña temporal. Cámbiala por una tuya para proteger tu cuenta."}
+      </p>
       <label htmlFor="new-pw" className="label mt-3">
         Nueva contraseña
       </label>

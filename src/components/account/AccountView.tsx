@@ -30,9 +30,22 @@ export function AccountView() {
   const [local, setLocal] = useState<PlacedOrder[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pwChanged, setPwChanged] = useState(false);
+  const [recovery, setRecovery] = useState(false);
+  const [showChange, setShowChange] = useState(false);
   const mustChangePassword = Boolean(session?.user.user_metadata?.must_change_password) && !pwChanged;
 
   useEffect(() => setLocal(getLocalOrders()), []);
+
+  // Llegó desde el enlace de "¿Olvidaste tu contraseña?": pedir la contraseña nueva.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("modo") === "nueva") setRecovery(true);
+    const sb = getBrowserSupabase();
+    if (!sb) return;
+    const { data } = sb.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const sb = getBrowserSupabase();
@@ -68,7 +81,33 @@ export function AccountView() {
                 <Icon name="logout" size={18} /> Cerrar sesión
               </button>
             </div>
-            {mustChangePassword && <ChangeTempPassword onDone={() => setPwChanged(true)} />}
+            {mustChangePassword && !recovery && <ChangeTempPassword onDone={() => setPwChanged(true)} />}
+            {recovery && !pwChanged && (
+              <ChangeTempPassword
+                variant="recovery"
+                onDone={() => {
+                  setPwChanged(true);
+                  setRecovery(false);
+                  window.history.replaceState(null, "", "/cuenta");
+                }}
+              />
+            )}
+            {!mustChangePassword && !recovery && !pwChanged && (
+              <>
+                <button type="button" className="mt-4 block text-sm font-medium text-ink-2 underline underline-offset-4 hover:text-ink" onClick={() => setShowChange((v) => !v)}>
+                  {showChange ? "Cancelar" : "Cambiar contraseña"}
+                </button>
+                {showChange && (
+                  <ChangeTempPassword
+                    variant="normal"
+                    onDone={() => {
+                      setPwChanged(true);
+                      setShowChange(false);
+                    }}
+                  />
+                )}
+              </>
+            )}
             {pwChanged && <p className="mt-4 rounded-xl bg-m-green/12 p-3 text-sm text-[#1c6b51]">Listo, tu contraseña quedó guardada.</p>}
           </div>
         ) : (
