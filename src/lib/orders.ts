@@ -91,6 +91,8 @@ export async function placeOrder(
     const payloadItems = await Promise.all(
       items.map(async (item, index) => {
         let image_path: string | null = null;
+        let original_path: string | null = null;
+        let lowRes = false;
         const dataUrl = item.customization?.imageDataUrl;
         if (dataUrl) {
           // Se sube la versión en alta resolución; si el navegador ya no la tiene, la vista previa.
@@ -101,13 +103,28 @@ export async function placeOrder(
           const { error } = await sb.storage.from(UPLOADS_BUCKET).upload(path, blob, { contentType: blob.type });
           if (error) throw new Error("No pudimos subir tu imagen de personalización. Intenta nuevamente.");
           image_path = path;
+          lowRes = !full;
+          // Si la mejoró con IA, también se guarda la original por si el taller prefiere usarla.
+          const original = item.customization?.originalKey ? await getImage(item.customization.originalKey) : null;
+          if (original) {
+            const oext = original.type === "image/webp" ? "webp" : original.type === "image/png" ? "png" : "jpg";
+            const opath = `${folder}/${index}-original.${oext}`;
+            const up = await sb.storage.from(UPLOADS_BUCKET).upload(opath, original, { contentType: original.type });
+            if (!up.error) original_path = opath;
+          }
         }
         return {
           product_id: item.productId,
           variant_id: item.variantId,
           quantity: item.quantity,
           customization: item.customization
-            ? { text: item.customization.text ?? null, name: item.customization.name ?? null, image_path }
+            ? {
+                text: item.customization.text ?? null,
+                name: item.customization.name ?? null,
+                image_path,
+                original_path,
+                image_info: image_path ? { ...(item.customization.imageInfo ?? {}), low_res: lowRes } : null,
+              }
             : null,
         };
       }),

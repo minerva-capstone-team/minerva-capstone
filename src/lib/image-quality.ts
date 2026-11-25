@@ -18,7 +18,7 @@ const OK_PX = 800;
  * Mide solo la resolución: no detecta fotos movidas o desenfocadas.
  */
 export async function assessImage(file: Blob): Promise<ImageQuality> {
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   const { width, height } = bitmap;
   bitmap.close();
   const longSide = Math.max(width, height);

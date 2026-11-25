@@ -84,6 +84,10 @@ export interface Customization {
   imageName?: string;
   /** Clave de la versión en alta resolución guardada en el navegador (IndexedDB); es la que se imprime. */
   imageKey?: string;
+  /** Foto original tal como la subió el cliente (si después la mejoró con IA). */
+  originalKey?: string;
+  /** Medidas y calidad de la imagen que se imprime, y mejoras con IA aplicadas. */
+  imageInfo?: { width: number; height: number; level: "good" | "ok" | "low"; fixes: string[] };
 }
 
 export interface CartItem {
