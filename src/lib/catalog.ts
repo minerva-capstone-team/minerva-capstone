@@ -32,7 +32,7 @@ export const getProducts = cache(async (): Promise<Product[]> => {
 
 export const getProduct = cache(async (slug: string): Promise<Product | null> => {
   const products = await getProducts();
-  return products.find((p) => p.slug === slug) ?? null;
+  return products.find((p) => p.slug === slug) ?? products.find((p) => p.old_slugs?.includes(slug)) ?? null;
 });
 
 export type SearchEntry = Pick<Product, "id" | "name" | "slug" | "price" | "placeholder_art"> & {

@@ -8,6 +8,10 @@ export function useAddToCart() {
   const openUI = useUI((s) => s.open);
 
   return (product: Product, opts: { variant?: ProductVariant | null; quantity?: number; customization?: Customization | null } = {}) => {
+    if (product.quote_only) {
+      toast({ title: "Este producto se cotiza", description: "Escríbenos por WhatsApp y te enviamos el valor según cantidad y diseño.", tone: "info" });
+      return false;
+    }
     const variant = opts.variant ?? null;
     const inCart = items.filter((i) => i.productId === product.id).reduce((n, i) => n + i.quantity, 0);
     const variantInCart = variant ? items.filter((i) => i.variantId === variant.id).reduce((n, i) => n + i.quantity, 0) : 0;

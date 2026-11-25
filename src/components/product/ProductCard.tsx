@@ -6,6 +6,7 @@ import { badgeLabel, cn, formatCLP, stockLabel } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { useAddToCart } from "@/components/cart/useAddToCart";
 import { ProductImage } from "./ProductImage";
+import { productInquiry } from "@/lib/whatsapp";
 
 const SIZES = "(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 50vw";
 
@@ -53,8 +54,12 @@ export function ProductCard({ product, priority, className }: { product: Product
 
         <button
           type="button"
-          disabled={stock.tone === "out"}
+          disabled={stock.tone === "out" && !product.quote_only}
           onClick={() => {
+            if (product.quote_only) {
+              window.open(productInquiry(product.name), "_blank", "noopener,noreferrer");
+              return;
+            }
             if (product.requires_image) {
               window.location.assign(`/productos/${product.slug}#personalizar`);
               return;
@@ -73,7 +78,7 @@ export function ProductCard({ product, priority, className }: { product: Product
           )}
         >
           <Icon name={added ? "check" : "plus"} size={18} />
-          <span className="hidden sm:inline">{stock.tone === "out" ? "Agotado" : product.requires_image ? "Personalizar" : added ? "Agregado" : "Agregar"}</span>
+          <span className="hidden sm:inline">{product.quote_only ? "Cotizar" : stock.tone === "out" ? "Agotado" : product.requires_image ? "Personalizar" : added ? "Agregado" : "Agregar"}</span>
         </button>
       </div>
 
@@ -88,13 +93,13 @@ export function ProductCard({ product, priority, className }: { product: Product
               </span>
             </Link>
           </h3>
-          <p className={cn("mt-1 text-xs font-medium", stock.tone === "out" ? "text-m-red" : stock.tone === "low" ? "text-[#b8481f]" : "text-[#23795d]")}>
+          {!product.quote_only && <p className={cn("mt-1 text-xs font-medium", stock.tone === "out" ? "text-m-red" : stock.tone === "low" ? "text-[#b8481f]" : "text-[#23795d]")}>
             ● {stock.label}
-          </p>
+          </p>}
         </div>
         <div className="shrink-0 text-right">
-          <p className="font-semibold tabular-nums">{formatCLP(product.price)}</p>
-          {onSale && <p className="text-xs text-ink-soft line-through tabular-nums">{formatCLP(product.compare_at_price!)}</p>}
+          <p className="font-semibold tabular-nums">{product.quote_only ? "A cotizar" : formatCLP(product.price)}</p>
+          {onSale && !product.quote_only && <p className="text-xs text-ink-soft line-through tabular-nums">{formatCLP(product.compare_at_price!)}</p>}
         </div>
       </div>
     </article>

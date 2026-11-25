@@ -49,7 +49,7 @@ export interface GiftPick {
  * Solo recomienda lo que hay en stock; lo que calza con la persona va primero.
  */
 export function pickGifts(products: Product[], who: Recipient, budget: Budget, limit = 4): GiftPick[] {
-  const pool = products.filter((p) => p.active && p.stock > 0 && p.price <= budget.max);
+  const pool = products.filter((p) => p.active && !p.quote_only && p.stock > 0 && p.price <= budget.max);
   const scored = pool.map((p) => {
     // Se compara con el nombre y la categoría: la descripción menciona de todo y da falsos positivos.
     const text = `${p.name} ${p.category?.name ?? ""}`;
