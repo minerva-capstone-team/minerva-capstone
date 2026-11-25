@@ -461,6 +461,10 @@ export function ProductEditor({ id }: { id: string | null }) {
                 <option value="round">Redonda (chapitas, placas)</option>
                 <option value="rect">Rectangular (cuadros, fotos, calendarios, tarjetas)</option>
                 <option value="bottle">Botella o vaso</option>
+                <option value="shirt">Polera, polerón o buzo</option>
+                <option value="pillow">Cojín</option>
+                <option value="bag">Saco o bolsa</option>
+                <option value="clock">Reloj</option>
                 <option value="generic">Genérica (sticker)</option>
               </select>
             </div>

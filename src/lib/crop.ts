@@ -21,6 +21,10 @@ export const PRINT_ASPECT: Record<PreviewKind, number> = {
   round: 1,
   rect: 1.36,
   bottle: 0.78,
+  shirt: 0.82,
+  pillow: 1,
+  bag: 0.86,
+  clock: 1,
 };
 
 async function rotated(blob: Blob, rotate: Crop["rotate"]): Promise<CanvasImageSource & { width: number; height: number }> {
