@@ -11,6 +11,7 @@ import type { PlacedOrder } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { AuthForm } from "./AuthForm";
 import { ChangeTempPassword, MyCoupons } from "./AccountExtras";
+import { MyProfile } from "./MyProfile";
 
 interface RemoteOrder {
   id: string;
@@ -33,6 +34,7 @@ export function AccountView() {
   const [recovery, setRecovery] = useState(false);
   const [showChange, setShowChange] = useState(false);
   const [linkProblem, setLinkProblem] = useState<string | null>(null);
+  const [tab, setTab] = useState<"datos" | "pedidos" | "cupones">("datos");
   useEffect(() => setLinkProblem(new URLSearchParams(window.location.search).get("modo")), []);
   const mustChangePassword = Boolean(session?.user.user_metadata?.must_change_password) && !pwChanged;
 
@@ -125,8 +127,24 @@ export function AccountView() {
       </div>
 
       <div className="space-y-10 lg:col-span-7">
-        {session && <MyCoupons />}
         {session && (
+          <nav aria-label="Mi cuenta" className="flex flex-wrap gap-2">
+            {(
+              [
+                ["datos", "Mis datos"],
+                ["pedidos", "Mis pedidos"],
+                ["cupones", "Mis cupones"],
+              ] as const
+            ).map(([k, l]) => (
+              <button key={k} type="button" className="chip" aria-pressed={tab === k} onClick={() => setTab(k)}>
+                {l}
+              </button>
+            ))}
+          </nav>
+        )}
+        {session && tab === "datos" && <MyProfile />}
+        {session && tab === "cupones" && <MyCoupons />}
+        {session && tab === "pedidos" && (
           <section aria-labelledby="remote-orders">
             <h2 id="remote-orders" className="display text-2xl">
               Mis pedidos
@@ -154,6 +172,7 @@ export function AccountView() {
           </section>
         )}
 
+        {(!session || tab === "pedidos") && (
         <section aria-labelledby="local-orders">
           <h2 id="local-orders" className="display text-2xl">
             Pedidos en este dispositivo
@@ -186,6 +205,7 @@ export function AccountView() {
             </ul>
           )}
         </section>
+        )}
       </div>
     </div>
   );
