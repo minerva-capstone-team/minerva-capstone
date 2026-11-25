@@ -38,6 +38,11 @@ export function AuthForm({ allowSignUp = true, title, startInReset = false }: { 
     setLoading(true);
     setError(null);
     setInfo(null);
+    if (mode === "signup" && (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password))) {
+      setLoading(false);
+      setError("Usa una contraseña de al menos 8 caracteres, con letras y números.");
+      return;
+    }
     if (mode === "reset") {
       const { error: resetError } = await sb.auth.resetPasswordForEmail(loginEmail(email), { redirectTo: `${window.location.origin}/cuenta?modo=nueva` });
       setLoading(false);
@@ -95,7 +100,7 @@ export function AuthForm({ allowSignUp = true, title, startInReset = false }: { 
             id="auth-pass"
             type="password"
             required
-            minLength={6}
+            minLength={mode === "signup" ? 8 : 6}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             className="field"
             value={password}
