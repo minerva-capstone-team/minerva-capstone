@@ -66,6 +66,10 @@ export interface Product {
   placeholder_art: ArtKey | null;
   /** El cliente debe subir su imagen para poder comprarlo. */
   requires_image?: boolean;
+  /** Solo cotización: se muestra pero no se compra (precio a convenir por WhatsApp). */
+  quote_only?: boolean;
+  /** URLs anteriores del producto (para redirigir enlaces viejos). */
+  old_slugs?: string[];
   /** Foto del producto en blanco que se usa de fondo en la vista previa. */
   mockup_url?: string | null;
   images: ProductImage[];

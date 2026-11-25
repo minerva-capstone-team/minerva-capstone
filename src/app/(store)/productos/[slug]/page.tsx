@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getProduct, getProducts } from "@/lib/catalog";
 import { site } from "@/lib/site";
 import { Icon } from "@/components/ui/Icon";
@@ -30,6 +30,8 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const [product, all] = await Promise.all([getProduct(slug), getProducts()]);
   if (!product) notFound();
+  // Enlace viejo: el producto cambió de URL en el panel.
+  if (product.slug !== slug) permanentRedirect(`/productos/${product.slug}`);
 
   const related = [
     ...all.filter((p) => p.id !== product.id && p.category_id === product.category_id),

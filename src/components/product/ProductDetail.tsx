@@ -208,8 +208,8 @@ export function ProductDetail({ product }: { product: Product }) {
           </div>
           <h1 className="display mt-4 text-[clamp(2.25rem,4.5vw,3.5rem)]">{product.name}</h1>
           <div className="mt-4 flex items-baseline gap-3">
-            <p className="display text-3xl tabular-nums">{formatCLP(unitPrice)}</p>
-            {product.compare_at_price && product.compare_at_price > product.price && (
+            <p className="display text-3xl tabular-nums">{product.quote_only ? "Precio a cotizar" : formatCLP(unitPrice)}</p>
+            {!product.quote_only && product.compare_at_price && product.compare_at_price > product.price && (
               <p className="text-lg text-ink-soft line-through tabular-nums">{formatCLP(product.compare_at_price + (variant?.price_delta ?? 0))}</p>
             )}
             <span className="text-sm text-ink-soft">CLP</span>
@@ -366,6 +366,16 @@ export function ProductDetail({ product }: { product: Product }) {
             </p>
           )}
 
+          {product.quote_only ? (
+            <div className="mt-8 rounded-2xl bg-paper p-5">
+              <p className="font-semibold">Este producto se cotiza</p>
+              <p className="mt-1 text-sm text-ink-soft">El valor depende de la cantidad, la prenda y el diseño. Escríbenos y te enviamos la cotización.</p>
+              <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-4 h-14 w-full text-base">
+                <WhatsAppIcon /> Cotizar por WhatsApp
+              </a>
+            </div>
+          ) : (
+          <>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={setQuantity} max={Math.max(1, available)} />
             <button type="button" onClick={onAdd} disabled={available <= 0 || needImage} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
@@ -379,6 +389,8 @@ export function ProductDetail({ product }: { product: Product }) {
           <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-3 h-14 w-full text-base">
             <WhatsAppIcon /> Consultar por WhatsApp
           </a>
+          </>
+          )}
 
           <div className="mt-8 divide-y divide-line border-y border-line">
             <details className="group py-1" open>

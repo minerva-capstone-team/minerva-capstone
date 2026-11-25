@@ -32,6 +32,7 @@ interface Form {
   featured: boolean;
   customizable: boolean;
   requires_image: boolean;
+  quote_only: boolean;
   mockup_url: string | null;
   active: boolean;
 }
@@ -51,6 +52,7 @@ const EMPTY: Form = {
   featured: false,
   customizable: true,
   requires_image: false,
+  quote_only: false,
   mockup_url: null,
   active: true,
 };
@@ -116,6 +118,7 @@ export function ProductEditor({ id }: { id: string | null }) {
           featured: data.featured,
           customizable: data.customizable,
           requires_image: Boolean(data.requires_image),
+          quote_only: Boolean(data.quote_only),
           mockup_url: data.mockup_url ?? null,
           active: data.active,
         });
@@ -162,6 +165,7 @@ export function ProductEditor({ id }: { id: string | null }) {
       featured: form.featured,
       customizable: form.customizable,
       requires_image: form.requires_image,
+      quote_only: form.quote_only,
       mockup_url: form.mockup_url,
       active: form.active,
     };
@@ -273,8 +277,9 @@ export function ProductEditor({ id }: { id: string | null }) {
         value={String(form[k])}
         onChange={(e) => {
           if (k === "slug") setSlugTouched(true);
-          set(k, e.target.value as never);
+          set(k, (k === "slug" ? e.target.value.toLowerCase().replace(/\s+/g, "-") : e.target.value) as never);
         }}
+        onBlur={k === "slug" ? () => set("slug", slugify(form.slug) as never) : undefined}
         aria-invalid={Boolean(errors[k])}
         {...props}
       />
@@ -308,7 +313,16 @@ export function ProductEditor({ id }: { id: string | null }) {
           <section className="space-y-5 rounded-3xl bg-white p-6 shadow-[var(--shadow-soft)]">
             <h2 className="display text-xl">Información</h2>
             {input("name", "Nombre", { required: true })}
-            {input("slug", "Slug (URL)", { required: true })}
+            <div>
+              {input("slug", "Dirección (URL)", { required: true })}
+              <p className="mt-1 break-all text-xs text-ink-soft">
+                minerva-arteycolor.cl/productos/<b>{form.slug || "…"}</b>
+                {id ? " · si la cambias, los enlaces viejos redirigen solos a la nueva." : ""}
+              </p>
+              <button type="button" className="mt-1 text-xs font-medium underline underline-offset-2" onClick={() => set("slug", slugify(form.name) as never)}>
+                Generar desde el nombre
+              </button>
+            </div>
             <div>
               <label htmlFor="f-description" className="label">
                 Descripción
@@ -506,6 +520,12 @@ export function ProductEditor({ id }: { id: string | null }) {
               onChange={(v) => set("requires_image", v)}
               label="Pedir imagen al cliente (obligatoria)"
               hint="No se puede comprar sin subir su foto o diseño (ej. placas, cuadros, fotos)."
+            />
+            <Check
+              checked={form.quote_only}
+              onChange={(v) => set("quote_only", v)}
+              label="Solo cotización (no se compra en la web)"
+              hint="Muestra «Precio a cotizar» y un botón de WhatsApp en vez de agregar al carrito (ej. estampado textil y corporativo)."
             />
           </section>
 
