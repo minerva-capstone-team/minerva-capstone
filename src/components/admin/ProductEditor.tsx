@@ -458,6 +458,9 @@ export function ProductEditor({ id }: { id: string | null }) {
                 <option value="mug">Taza</option>
                 <option value="notebook">Cuaderno / agenda</option>
                 <option value="tote">Tote bag</option>
+                <option value="round">Redonda (chapitas, placas)</option>
+                <option value="rect">Rectangular (cuadros, fotos, calendarios, tarjetas)</option>
+                <option value="bottle">Botella o vaso</option>
                 <option value="generic">Genérica (sticker)</option>
               </select>
             </div>

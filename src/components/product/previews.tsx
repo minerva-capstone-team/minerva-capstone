@@ -27,7 +27,7 @@ function Surface({ viewBox, label, children }: { viewBox: string; label: string;
   );
 }
 
-function PrintContent({ id, print, x, y, w, h, ink = "#141217" }: { id: string; print: MugPrint; x: number; y: number; w: number; h: number; ink?: string }) {
+function PrintContent({ id, print, x, y, w, h, ink = "#141217", circle = false }: { id: string; print: MugPrint; x: number; y: number; w: number; h: number; ink?: string; circle?: boolean }) {
   const hasText = Boolean(print.text?.trim() || print.name?.trim());
   const cx = x + w / 2;
   return (
@@ -40,7 +40,7 @@ function PrintContent({ id, print, x, y, w, h, ink = "#141217" }: { id: string; 
           <stop offset="1" stopColor="#6A45A0" />
         </linearGradient>
         <clipPath id={`${id}-c`}>
-          <rect x={x} y={y} width={w} height={h} rx="8" />
+          {circle ? <circle cx={x + w / 2} cy={y + h / 2} r={Math.min(w, h) / 2} /> : <rect x={x} y={y} width={w} height={h} rx="8" />}
         </clipPath>
       </defs>
       <g clipPath={`url(#${id}-c)`}>
@@ -127,11 +127,63 @@ function MockupRenderer({ print, productName, mockup }: PreviewProps) {
   );
 }
 
+/** Chapitas y placas: la foto llena el círculo, con borde metálico. */
+function RoundRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <defs>
+        <linearGradient id={`${id}-metal`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f4f4f5" />
+          <stop offset="0.45" stopColor="#a1a1aa" />
+          <stop offset="0.55" stopColor="#d4d4d8" />
+          <stop offset="1" stopColor="#71717a" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="200" cy="420" rx="120" ry="14" fill="#141217" opacity="0.1" />
+      <circle cx="200" cy="245" r="150" fill={`url(#${id}-metal)`} />
+      <circle cx="200" cy="245" r="138" fill="#fff" />
+      <PrintContent id={id} print={print} x={62} y={107} w={276} h={276} circle />
+      <circle cx="200" cy="245" r="138" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="2" />
+      <ellipse cx="150" cy="170" rx="60" ry="26" fill="#fff" opacity="0.18" transform="rotate(-30 150 170)" />
+    </Surface>
+  );
+}
+
+/** Cuadros, fotos, calendarios y tarjetas: la foto llena el rectángulo. */
+function RectRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="395" rx="160" ry="14" fill="#141217" opacity="0.1" />
+      <rect x="26" y="118" width="348" height="264" rx="10" fill="#fff" stroke="#e7e0d6" strokeWidth="2" />
+      <PrintContent id={id} print={print} x={40} y={132} w={320} h={236} />
+    </Surface>
+  );
+}
+
+/** Botella o vaso: área de impresión en el cuerpo. */
+function BottleRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="472" rx="90" ry="10" fill="#141217" opacity="0.1" />
+      <rect x="168" y="22" width="64" height="40" rx="8" fill="#1f1f23" />
+      <path d="M176 62h48v24c0 10 46 30 46 64v300c0 12-10 22-22 22H152c-12 0-22-10-22-22V150c0-34 46-54 46-64Z" fill="#fafafa" stroke="#e4e4e7" strokeWidth="2" />
+      <PrintContent id={id} print={print} x={140} y={190} w={120} h={154} />
+      <rect x="134" y="150" width="14" height="290" rx="7" fill="#fff" opacity="0.55" />
+    </Surface>
+  );
+}
+
 const renderers: Record<PreviewKind, (p: PreviewProps) => ReactNode> = {
   mug: MugRenderer,
   notebook: NotebookRenderer,
   tote: ToteRenderer,
   generic: GenericRenderer,
+  round: RoundRenderer,
+  rect: RectRenderer,
+  bottle: BottleRenderer,
 };
 
 export function CustomizationPreview({ kind, ...props }: PreviewProps & { kind: PreviewKind }) {

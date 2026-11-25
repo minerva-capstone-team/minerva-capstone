@@ -274,7 +274,7 @@ function AdminOrders() {
                                         : ""}
                                       {i.customization_data.image_info.level === "good" ? "✅ buena calidad" : i.customization_data.image_info.level === "ok" ? "⚠️ calidad justa" : i.customization_data.image_info.level === "low" ? "❌ calidad baja: revisar con el cliente" : ""}
                                       {i.customization_data.image_info.fixes?.length
-                                        ? ` · mejorada con IA (${i.customization_data.image_info.fixes.map((f) => (f === "nitidez" ? "nitidez" : "sin fondo")).join(", ")})`
+                                        ? ` · mejorada con IA (${i.customization_data.image_info.fixes.map((f) => (f === "nitidez" ? "nitidez" : f === "color" ? "luz y color" : f === "encuadre" ? "encuadrada por el cliente" : "sin fondo")).join(", ")})`
                                         : ""}
                                       {i.customization_data.image_info.low_res ? " · ⚠️ solo llegó la vista previa reducida: pide la foto original" : ""}
                                     </span>

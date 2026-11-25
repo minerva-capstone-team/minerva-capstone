@@ -18,6 +18,9 @@ import { CustomizationPreview } from "./previews";
 import { DeliveryCountdown } from "./DeliveryCountdown";
 import { PhotoQuality } from "./PhotoQuality";
 import { PhotoTools, type PhotoFix } from "./PhotoTools";
+import { PhotoFraming } from "./PhotoFraming";
+import { NO_CROP, PRINT_ASPECT, isDefaultCrop, renderCrop, type Crop } from "@/lib/crop";
+import { assessSize } from "@/lib/image-quality";
 
 function Gallery({ product }: { product: Product }) {
   const slides: { key: string; node: React.ReactNode }[] = product.images.length
@@ -118,6 +121,37 @@ export function ProductDetail({ product }: { product: Product }) {
   const [quality, setQuality] = useState<ImageQuality | null>(null);
   const [uploading, setUploading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [crop, setCrop] = useState<Crop>(NO_CROP);
+  const [framed, setFramed] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const aspect = PRINT_ASPECT[product.preview_kind] ?? 1;
+
+  // Vista del encuadre (liviana) cada vez que cambia la foto o el encuadre.
+  useEffect(() => {
+    if (!printBlob) {
+      setFramed(null);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      void renderCrop(printBlob, aspect, crop, 700)
+        .then(async ({ blob, width, height }) => {
+          const url = await new Promise<string>((res) => {
+            const r = new FileReader();
+            r.onload = () => res(String(r.result));
+            r.readAsDataURL(blob);
+          });
+          if (!alive) return;
+          setFramed(url);
+          setQuality(assessSize(width, height));
+        })
+        .catch(() => undefined);
+    }, 120);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [printBlob, crop, aspect]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const variant = product.variants.find((v) => v.id === variantId) ?? null;
@@ -133,8 +167,8 @@ export function ProductDetail({ product }: { product: Product }) {
           imageDataUrl: image?.dataUrl,
           imageName: image?.name,
           imageKey: image?.key ?? undefined,
-          originalKey: fixes.length && originalKey ? originalKey : undefined,
-          imageInfo: image && quality ? { width: quality.width, height: quality.height, level: quality.level, fixes } : undefined,
+          originalKey: (fixes.length || !isDefaultCrop(crop)) && originalKey ? originalKey : undefined,
+          imageInfo: image && quality ? { width: quality.width, height: quality.height, level: quality.level, fixes: isDefaultCrop(crop) ? fixes : [...fixes, "encuadre"], crop } : undefined,
         }
       : null;
 
@@ -156,8 +190,7 @@ export function ProductDetail({ product }: { product: Product }) {
       setOriginalBlob(full);
       setOriginalKey(await putImage(full));
       setFixes([]);
-      // La calidad se mide con el archivo original (antes de ajustarlo para imprimir).
-      setQuality(await assessImage(file).catch(() => null));
+      setCrop(NO_CROP);
     } catch (e) {
       toast({ title: "No pudimos cargar la imagen", description: e instanceof Error ? e.message : undefined, tone: "error" });
     } finally {
@@ -179,8 +212,24 @@ export function ProductDetail({ product }: { product: Product }) {
 
   const needImage = Boolean(product.customizable && product.requires_image && !image);
 
-  const onAdd = () => {
-    if (addToCart(product, { variant, quantity, customization })) {
+  /** Versión que se imprime: la foto ya recortada con el encuadre y la forma del producto. */
+  const finalCustomization = async (): Promise<Customization | null> => {
+    if (!customization || !printBlob || !image) return customization;
+    setPreparing(true);
+    try {
+      const { blob } = await renderCrop(printBlob, aspect, crop, 2400);
+      const key = await putImage(blob);
+      return { ...customization, imageKey: key ?? customization.imageKey, imageDataUrl: framed ?? customization.imageDataUrl };
+    } catch {
+      return customization;
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const onAdd = async () => {
+    const custom = await finalCustomization();
+    if (addToCart(product, { variant, quantity, customization: custom })) {
       setJustAdded(true);
       setTimeout(() => setJustAdded(false), 1800);
       setQuantity(1);
@@ -188,8 +237,9 @@ export function ProductDetail({ product }: { product: Product }) {
   };
 
   // Comprar ahora: lo deja en el carro y va directo al checkout (sin abrir el carro).
-  const onBuyNow = () => {
-    if (addToCart(product, { variant, quantity, customization })) router.push("/checkout");
+  const onBuyNow = async () => {
+    const custom = await finalCustomization();
+    if (addToCart(product, { variant, quantity, customization: custom })) router.push("/checkout");
   };
 
   const extra = [variant && `Variante: ${variant.name}`, name.trim() && `Nombre: ${name.trim()}`, text.trim() && `Texto: "${text.trim()}"`].filter(Boolean).join("\n");
@@ -350,7 +400,10 @@ export function ProductDetail({ product }: { product: Product }) {
                     </label>
                   )}
                   {image && quality && <PhotoQuality quality={quality} />}
-                  {image && printBlob && <PhotoTools current={printBlob} quality={quality} applied={fixes} onResult={onFix} onRevert={() => void onRevert()} />}
+                  {image && printBlob && (
+                    <PhotoFraming framed={framed} aspect={aspect} round={product.preview_kind === "round"} crop={crop} onChange={setCrop} />
+                  )}
+                  {image && printBlob && <PhotoTools current={printBlob} applied={fixes} onResult={onFix} onRevert={() => void onRevert()} />}
                 </div>
                 <p className="text-xs text-ink-soft">Antes de producir te enviamos el diseño final por WhatsApp para tu aprobación.</p>
               </div>
@@ -378,12 +431,12 @@ export function ProductDetail({ product }: { product: Product }) {
           <>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={setQuantity} max={Math.max(1, available)} />
-            <button type="button" onClick={onAdd} disabled={available <= 0 || needImage} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
+            <button type="button" onClick={() => void onAdd()} disabled={available <= 0 || needImage || preparing} className="btn btn-primary h-14 min-w-0 flex-1 text-base">
               <Icon name={justAdded ? "check" : "bag"} size={20} />
               {needImage ? "Sube tu imagen para continuar" : product.stock <= 0 || variant?.stock === 0 ? "Agotado" : available <= 0 ? "Ya tienes todo el stock" : justAdded ? "¡Añadido!" : `Añadir al carrito · ${formatCLP(unitPrice * quantity)}`}
             </button>
           </div>
-          <button type="button" onClick={onBuyNow} disabled={available <= 0 || needImage} className="btn btn-ghost mt-3 h-14 w-full text-base">
+          <button type="button" onClick={() => void onBuyNow()} disabled={available <= 0 || needImage || preparing} className="btn btn-ghost mt-3 h-14 w-full text-base">
             Comprar ahora
           </button>
           <a href={productInquiry(product.name, extra)} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-3 h-14 w-full text-base">
@@ -435,7 +488,7 @@ export function ProductDetail({ product }: { product: Product }) {
             <div className="relative mx-auto aspect-[4/5] w-full max-w-md rounded-[2rem] bg-paper-2">
               <CustomizationPreview
                 kind={product.preview_kind}
-                print={{ text, name, image: image?.dataUrl }}
+                print={{ text, name, image: framed ?? image?.dataUrl }}
                 variantName={variant?.name ?? null}
                 art={product.placeholder_art}
                 productName={product.name}
