@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { cartTotal, useCart } from "@/lib/stores";
 import { cn, formatCLP } from "@/lib/format";
 import { PICKUP, REGIONS } from "@/lib/regions";
+import { loadProfile, saveProfile } from "@/lib/profile";
 import { placeOrder } from "@/lib/orders";
 import { formatRut, isValidRut, myCoupons, quoteCheckout, quoteLines, usePickup } from "@/lib/checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -73,6 +74,33 @@ export function CheckoutForm() {
   const [gift, setGift] = useState({ message: "", from: "" });
   const [billing, setBilling] = useState<BillingData>(EMPTY_BILLING);
   const [billingErrors, setBillingErrors] = useState<BillingErrors>({});
+  const [saveData, setSaveData] = useState(true);
+
+  // Con sesión iniciada: completa los campos vacíos con "Mis datos" y el email de la cuenta.
+  useEffect(() => {
+    if (!hydrated || !session) return;
+    let alive = true;
+    void loadProfile().then((p) => {
+      if (!alive) return;
+      setData((d) => {
+        const fill = (cur: string, saved?: string) => (cur.trim() ? cur : saved ?? "");
+        return {
+          ...d,
+          email: fill(d.email, session.user.email ?? ""),
+          first_name: fill(d.first_name, p?.first_name),
+          last_name: fill(d.last_name, p?.last_name),
+          phone: fill(d.phone, p?.phone),
+          address: fill(d.address, p?.address),
+          comuna: fill(d.comuna, p?.comuna),
+          region: p?.region && (!d.region || d.region === EMPTY.region) ? p.region : d.region,
+        };
+      });
+      if (p?.delivery) setDelivery(p.delivery);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, session]);
 
   useEffect(() => {
     // useCart se rehidrata en MotionProvider; esperamos a que termine
@@ -191,6 +219,15 @@ export function CheckoutForm() {
         billing: documentType === "factura" ? billing : null,
         gift: isGift && gift.message.trim() ? gift : null,
       });
+      if (session && saveData) {
+        void saveProfile({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+          ...(delivery === "envio" ? { address: data.address, comuna: data.comuna, region: data.region } : {}),
+          delivery,
+        });
+      }
       const provider = paymentProviders.find((p) => p.id === method)!;
       setPlaced(true);
       clearCoupon();
@@ -327,6 +364,12 @@ export function CheckoutForm() {
                 ))}
               </select>
             </div>
+            )}
+            {session && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
+                <input type="checkbox" className="size-4 accent-[var(--color-ink)]" checked={saveData} onChange={(e) => setSaveData(e.target.checked)} />
+                Guardar estos datos en mi cuenta para la próxima compra
+              </label>
             )}
             <div className="sm:col-span-2">
               <label htmlFor="co-notes" className="label">
