@@ -8,7 +8,7 @@ const SLIDES = [
   { src: "/banners/tazon-mug.webp", alt: "Tazón Mug personalizado con tu logo o diseño", href: "/productos/mug-termico" },
   { src: "/banners/cuadro-ceramica.webp", alt: "Cuadro de cerámica personalizado con tu foto", href: "/productos/cuadro-tipo-piedra-19x14-cm" },
   { src: "/banners/fotografias.webp", alt: "Promoción fotografías: 100 fotos 10x14 a $10.000 y 100 fotos 13x18 a $17.000", href: "/productos?q=fotograf%C3%ADas" },
-  { src: "/banners/botella.webp", alt: "Botella personalizada con tu imagen", href: "/productos/botella-acero-inox-750cc" },
+  { src: "/banners/botella-750.webp", alt: "Botella de 750 ml personalizada con tu imagen", href: "/productos/botella-acero-inox-750cc" },
   { src: "/banners/vaso-cervecero.webp", alt: "Vaso cervecero personalizado", href: "/productos/vaso-cervecero" },
   { src: "/banners/placa-mascotas.webp", alt: "Placa de identificación para mascotas", href: "/productos/placa-mascotas" },
   { src: "/banners/llaveros.webp", alt: "Llaveros metálicos sublimados", href: "/productos?categoria=sublimacion" },
