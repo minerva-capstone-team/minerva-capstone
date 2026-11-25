@@ -1,6 +1,7 @@
 import { getCategories, getSearchIndex } from "@/lib/catalog";
 import { buildNav, site } from "@/lib/site";
 import { Header } from "@/components/layout/Header";
+import { AuthRedirects } from "@/components/account/AuthRedirects";
 import { Footer } from "@/components/layout/Footer";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
@@ -35,6 +36,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         Saltar al contenido
       </a>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }} />
+      <AuthRedirects />
       <Header nav={navItems} />
       <main id="contenido">{children}</main>
       <Footer />

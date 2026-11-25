@@ -32,6 +32,8 @@ export function AccountView() {
   const [pwChanged, setPwChanged] = useState(false);
   const [recovery, setRecovery] = useState(false);
   const [showChange, setShowChange] = useState(false);
+  const [linkProblem, setLinkProblem] = useState<string | null>(null);
+  useEffect(() => setLinkProblem(new URLSearchParams(window.location.search).get("modo")), []);
   const mustChangePassword = Boolean(session?.user.user_metadata?.must_change_password) && !pwChanged;
 
   useEffect(() => setLocal(getLocalOrders()), []);
@@ -111,7 +113,14 @@ export function AccountView() {
             {pwChanged && <p className="mt-4 rounded-xl bg-m-green/12 p-3 text-sm text-[#1c6b51]">Listo, tu contraseña quedó guardada.</p>}
           </div>
         ) : (
-          <AuthForm />
+          <>
+            {(linkProblem === "vencido" || (linkProblem === "nueva" && session === null)) && (
+              <p role="alert" className="mb-4 rounded-2xl bg-m-yellow/20 p-4 text-sm text-[#8a5a00]">
+                El enlace para cambiar la contraseña venció o ya se usó. Pide uno nuevo aquí abajo: llega a tu correo en un par de minutos (revisa también spam).
+              </p>
+            )}
+            <AuthForm startInReset={linkProblem === "vencido" || linkProblem === "nueva"} />
+          </>
         )}
       </div>
 

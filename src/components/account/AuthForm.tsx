@@ -8,7 +8,7 @@ const translate = (msg: string) => {
   if (/already registered/i.test(msg)) return "Ya existe una cuenta con ese email. Inicia sesión.";
   if (/password should be at least/i.test(msg)) return "La contraseña debe tener al menos 6 caracteres.";
   if (/email not confirmed/i.test(msg)) return "Confirma tu email desde el correo que te enviamos.";
-  if (/rate limit/i.test(msg)) return "Demasiados intentos. Espera unos minutos.";
+  if (/rate limit|security purposes/i.test(msg)) return "Ya enviamos un correo hace poco. Espera unos minutos antes de pedir otro.";
   return "No pudimos completar la acción. Intenta nuevamente.";
 };
 
@@ -18,7 +18,7 @@ const loginEmail = (value: string) => {
   return v.includes("@") ? v : `${v.toLowerCase()}@minerva-arteycolor.cl`;
 };
 
-export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean; title?: string }) {
+export function AuthForm({ allowSignUp = true, title, startInReset = false }: { allowSignUp?: boolean; title?: string; startInReset?: boolean }) {
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +28,8 @@ export function AuthForm({ allowSignUp = true, title }: { allowSignUp?: boolean;
   // /cuenta?modo=crear abre directo la pestaña "Crear cuenta"
   useEffect(() => {
     if (allowSignUp && new URLSearchParams(window.location.search).get("modo") === "crear") setMode("signup");
-  }, [allowSignUp]);
+    if (startInReset) setMode("reset");
+  }, [allowSignUp, startInReset]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
