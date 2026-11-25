@@ -15,7 +15,7 @@ export type ArtKey =
 
 export type Badge = "nuevo" | "mas-vendido" | "personalizable";
 
-export type PreviewKind = "mug" | "notebook" | "tote" | "generic" | "round" | "rect" | "bottle";
+export type PreviewKind = "mug" | "notebook" | "tote" | "generic" | "round" | "rect" | "bottle" | "shirt" | "pillow" | "bag" | "clock";
 
 export interface Category {
   id: string;

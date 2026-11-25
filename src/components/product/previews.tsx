@@ -176,6 +176,86 @@ function BottleRenderer({ print, productName }: PreviewProps) {
   );
 }
 
+/** Poleras, polerones, buzos y uniformes: el diseño va en el pecho. */
+function ShirtRenderer({ print, productName, variantName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  const v = (variantName ?? productName).toLowerCase();
+  const dark = /negr|azul marino|marino|gris oscuro/.test(v);
+  const hoodie = /poler[oó]n|buzo|canguro/.test(productName.toLowerCase());
+  const body = dark ? "#26262b" : "#fafafa";
+  const line = dark ? "#3f3f46" : "#e4e4e7";
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="470" rx="140" ry="12" fill="#141217" opacity="0.08" />
+      <path
+        d={
+          hoodie
+            ? "M150 70c10 26 90 26 100 0l70 30 52 108-50 26-26-44v268H104V190l-26 44-50-26 52-108Z"
+            : "M152 62c8 30 88 30 96 0l78 30 46 96-56 30-22-38v274H106V180l-22 38-56-30 46-96Z"
+        }
+        fill={body}
+        stroke={line}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {hoodie ? (
+        <path d="M150 70c4 44 96 44 100 0-10 50-90 50-100 0Z" fill={line} opacity="0.6" />
+      ) : (
+        <path d="M152 62c8 30 88 30 96 0" fill="none" stroke={line} strokeWidth="6" />
+      )}
+      {hoodie && <path d="M140 360h120v60H140Z" fill="none" stroke={line} strokeWidth="2" />}
+      <PrintContent id={id} print={print} x={140} y={140} w={120} h={146} ink={dark ? "#fff" : "#141217"} />
+    </Surface>
+  );
+}
+
+/** Cojín: el diseño cubre el frente. */
+function PillowRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="420" rx="150" ry="14" fill="#141217" opacity="0.1" />
+      <path d="M60 110q140-24 280 0q22 140 0 280q-140 24-280 0q-22-140 0-280Z" fill="#fff" stroke="#e7e0d6" strokeWidth="2" />
+      <PrintContent id={id} print={print} x={82} y={130} w={236} h={240} />
+      <path d="M60 110q140-24 280 0q22 140 0 280q-140 24-280 0q-22-140 0-280Z" fill="none" stroke="#141217" strokeOpacity="0.06" strokeWidth="14" />
+    </Surface>
+  );
+}
+
+/** Saco o bolsa dulcera: bolsita con cordón. */
+function BagRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="452" rx="130" ry="12" fill="#141217" opacity="0.1" />
+      <path d="M96 120h208l16 300q0 20-20 20H100q-20 0-20-20Z" fill="#f4ebd9" stroke="#e7dbc4" strokeWidth="2" />
+      <path d="M96 140q104 18 208 0" fill="none" stroke="#c7a46b" strokeWidth="5" />
+      <path d="M150 142q-20 40 -6 70M250 142q20 40 6 70" fill="none" stroke="#c7a46b" strokeWidth="4" strokeLinecap="round" />
+      <PrintContent id={id} print={print} x={118} y={190} w={164} h={190} />
+    </Surface>
+  );
+}
+
+/** Reloj: la foto es la esfera, con las agujas encima. */
+function ClockRenderer({ print, productName }: PreviewProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Surface viewBox="0 0 400 500" label={`Vista previa de ${productName}`}>
+      <ellipse cx="200" cy="430" rx="120" ry="12" fill="#141217" opacity="0.1" />
+      <circle cx="200" cy="245" r="156" fill="#1f1f23" />
+      <circle cx="200" cy="245" r="142" fill="#fff" />
+      <PrintContent id={id} print={print} x={62} y={107} w={276} h={276} circle />
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i * Math.PI) / 6;
+        return <line key={i} x1={200 + Math.sin(a) * 124} y1={245 - Math.cos(a) * 124} x2={200 + Math.sin(a) * 136} y2={245 - Math.cos(a) * 136} stroke="#fff" strokeWidth="4" strokeLinecap="round" />;
+      })}
+      <line x1="200" y1="245" x2="200" y2="170" stroke="#fff" strokeWidth="7" strokeLinecap="round" />
+      <line x1="200" y1="245" x2="256" y2="268" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="200" cy="245" r="9" fill="#fff" />
+    </Surface>
+  );
+}
+
 const renderers: Record<PreviewKind, (p: PreviewProps) => ReactNode> = {
   mug: MugRenderer,
   notebook: NotebookRenderer,
@@ -184,6 +264,10 @@ const renderers: Record<PreviewKind, (p: PreviewProps) => ReactNode> = {
   round: RoundRenderer,
   rect: RectRenderer,
   bottle: BottleRenderer,
+  shirt: ShirtRenderer,
+  pillow: PillowRenderer,
+  bag: BagRenderer,
+  clock: ClockRenderer,
 };
 
 export function CustomizationPreview({ kind, ...props }: PreviewProps & { kind: PreviewKind }) {
