@@ -55,7 +55,13 @@ interface OrderRow {
     variant_name: string | null;
     quantity: number;
     unit_price: number;
-    customization_data: { text?: string | null; name?: string | null; image_path?: string | null } | null;
+    customization_data: {
+      text?: string | null;
+      name?: string | null;
+      image_path?: string | null;
+      original_path?: string | null;
+      image_info?: { width?: number; height?: number; level?: string; fixes?: string[]; low_res?: boolean } | null;
+    } | null;
   }[];
 }
 
@@ -68,7 +74,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelado: "bg-ink/10 text-ink-soft",
 };
 
-function CustomImage({ path }: { path: string }) {
+function CustomImage({ path, label }: { path: string; label?: string }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     adminDb()
@@ -78,10 +84,15 @@ function CustomImage({ path }: { path: string }) {
   }, [path]);
   if (!url) return <span className="skeleton inline-block size-16 rounded-xl" />;
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block" aria-label="Abrir imagen del cliente">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Imagen enviada por el cliente" className="size-16 rounded-xl object-cover ring-1 ring-line" />
-    </a>
+    <span className="inline-flex flex-col items-start gap-1">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block" aria-label="Abrir imagen del cliente">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="Imagen enviada por el cliente" className="size-20 rounded-xl object-cover ring-1 ring-line" />
+      </a>
+      <a href={url} download className="text-xs font-medium underline underline-offset-2">
+        {label ?? "Descargar"}
+      </a>
+    </span>
   );
 }
 
@@ -250,7 +261,24 @@ function AdminOrders() {
                                 <span className="mt-2 block space-y-1 rounded-xl bg-paper p-3">
                                   {i.customization_data.name && <span className="block">Nombre: “{i.customization_data.name}”</span>}
                                   {i.customization_data.text && <span className="block">Texto: “{i.customization_data.text}”</span>}
-                                  {i.customization_data.image_path && <CustomImage path={i.customization_data.image_path} />}
+                                  {i.customization_data.image_path && (
+                                    <span className="flex flex-wrap items-start gap-4">
+                                      <CustomImage path={i.customization_data.image_path} label={i.customization_data.original_path ? "Descargar (mejorada)" : "Descargar para imprimir"} />
+                                      {i.customization_data.original_path && <CustomImage path={i.customization_data.original_path} label="Descargar original" />}
+                                    </span>
+                                  )}
+                                  {i.customization_data.image_info && (
+                                    <span className="block text-xs text-ink-soft">
+                                      {i.customization_data.image_info.width && i.customization_data.image_info.height
+                                        ? `${i.customization_data.image_info.width} × ${i.customization_data.image_info.height} px · `
+                                        : ""}
+                                      {i.customization_data.image_info.level === "good" ? "✅ buena calidad" : i.customization_data.image_info.level === "ok" ? "⚠️ calidad justa" : i.customization_data.image_info.level === "low" ? "❌ calidad baja: revisar con el cliente" : ""}
+                                      {i.customization_data.image_info.fixes?.length
+                                        ? ` · mejorada con IA (${i.customization_data.image_info.fixes.map((f) => (f === "nitidez" ? "nitidez" : "sin fondo")).join(", ")})`
+                                        : ""}
+                                      {i.customization_data.image_info.low_res ? " · ⚠️ solo llegó la vista previa reducida: pide la foto original" : ""}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </span>

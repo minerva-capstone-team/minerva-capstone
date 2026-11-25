@@ -13,7 +13,8 @@ const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers
 const UPSCALE_MODEL = "Xenova/swin2SR-lightweight-x2-64";
 const BG_MODEL = "onnx-community/ormbg-ONNX";
 /** Fotos más grandes ya tienen buena resolución y ampliarlas sería muy lento en un celular. */
-export const UPSCALE_MAX_SIDE = 1400;
+const isPhone = typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+export const UPSCALE_MAX_SIDE = isPhone ? 1000 : 1400;
 
 type Pipe = (input: unknown) => Promise<unknown>;
 interface RawImageLike {

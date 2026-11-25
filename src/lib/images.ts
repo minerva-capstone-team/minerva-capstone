@@ -4,7 +4,7 @@
 export async function downscaleImage(file: File, maxSize = 900, quality = 0.85): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen.");
   if (file.size > 10 * 1024 * 1024) throw new Error("La imagen supera los 10 MB.");
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
@@ -33,9 +33,15 @@ async function encode(bitmap: ImageBitmap, maxSize: number, type: string, qualit
  * y menos de 5 MB. Mantiene la transparencia si la imagen la tiene.
  */
 export async function prepareForPrint(blob: Blob, maxSize = 2400): Promise<Blob> {
-  if (!blob.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen.");
-  if (blob.size > 15 * 1024 * 1024) throw new Error("La imagen supera los 15 MB.");
-  const bitmap = await createImageBitmap(blob);
+  const name = (blob as File).name ?? "";
+  if (/\.(heic|heif)$/i.test(name) || /heic|heif/i.test(blob.type)) {
+    throw new Error("Esta foto está en formato HEIC (iPhone). Envíala en JPG o PNG: en el iPhone, Ajustes → Cámara → Formatos → «Más compatible», o compártela como JPG.");
+  }
+  if (!blob.type.startsWith("image/")) throw new Error("El archivo debe ser una imagen (JPG, PNG o WEBP).");
+  if (blob.size > 15 * 1024 * 1024) throw new Error("La imagen supera los 15 MB. Prueba con una versión más liviana.");
+  const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" }).catch(() => {
+    throw new Error("No pudimos leer esta imagen. Prueba con una foto en JPG o PNG.");
+  });
   try {
     const alpha = blob.type === "image/png" || blob.type === "image/webp";
     let out = await encode(bitmap, maxSize, alpha ? "image/webp" : "image/jpeg", 0.92);
@@ -49,7 +55,7 @@ export async function prepareForPrint(blob: Blob, maxSize = 2400): Promise<Blob>
 
 /** Vista previa liviana (data URL) para el carro y la maqueta del producto. */
 export async function previewDataUrl(blob: Blob, maxSize = 900): Promise<string> {
-  const bitmap = await createImageBitmap(blob);
+  const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
   try {
     const alpha = blob.type === "image/png" || blob.type === "image/webp";
     const small = await encode(bitmap, maxSize, alpha ? "image/webp" : "image/jpeg", 0.85);

@@ -113,6 +113,7 @@ export function ProductDetail({ product }: { product: Product }) {
   // Versión que se imprime (alta resolución) y la original, para poder deshacer las mejoras con IA.
   const [printBlob, setPrintBlob] = useState<Blob | null>(null);
   const [originalBlob, setOriginalBlob] = useState<Blob | null>(null);
+  const [originalKey, setOriginalKey] = useState<string | null>(null);
   const [fixes, setFixes] = useState<PhotoFix[]>([]);
   const [quality, setQuality] = useState<ImageQuality | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -126,7 +127,15 @@ export function ProductDetail({ product }: { product: Product }) {
   const available = Math.max(0, Math.min(product.stock - inCart, variantLeft));
   const customization: Customization | null =
     product.customizable && (text.trim() || name.trim() || image)
-      ? { text: text.trim() || undefined, name: name.trim() || undefined, imageDataUrl: image?.dataUrl, imageName: image?.name, imageKey: image?.key ?? undefined }
+      ? {
+          text: text.trim() || undefined,
+          name: name.trim() || undefined,
+          imageDataUrl: image?.dataUrl,
+          imageName: image?.name,
+          imageKey: image?.key ?? undefined,
+          originalKey: fixes.length && originalKey ? originalKey : undefined,
+          imageInfo: image && quality ? { width: quality.width, height: quality.height, level: quality.level, fixes } : undefined,
+        }
       : null;
 
   /** Guarda una versión de la foto: alta resolución en el navegador + vista previa liviana para el carro. */
@@ -145,6 +154,7 @@ export function ProductDetail({ product }: { product: Product }) {
     try {
       const full = await saveVersion(file, file.name);
       setOriginalBlob(full);
+      setOriginalKey(await putImage(full));
       setFixes([]);
       // La calidad se mide con el archivo original (antes de ajustarlo para imprimir).
       setQuality(await assessImage(file).catch(() => null));
@@ -315,6 +325,7 @@ export function ProductDetail({ product }: { product: Product }) {
                           setQuality(null);
                           setPrintBlob(null);
                           setOriginalBlob(null);
+                          setOriginalKey(null);
                           setFixes([]);
                         }}
                         className="grid size-10 place-items-center rounded-full hover:bg-m-red/10 hover:text-m-red" aria-label="Quitar imagen">
