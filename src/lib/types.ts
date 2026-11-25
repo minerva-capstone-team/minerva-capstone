@@ -15,7 +15,7 @@ export type ArtKey =
 
 export type Badge = "nuevo" | "mas-vendido" | "personalizable";
 
-export type PreviewKind = "mug" | "notebook" | "tote" | "generic";
+export type PreviewKind = "mug" | "notebook" | "tote" | "generic" | "round" | "rect" | "bottle";
 
 export interface Category {
   id: string;
@@ -91,7 +91,7 @@ export interface Customization {
   /** Foto original tal como la subió el cliente (si después la mejoró con IA). */
   originalKey?: string;
   /** Medidas y calidad de la imagen que se imprime, y mejoras con IA aplicadas. */
-  imageInfo?: { width: number; height: number; level: "good" | "ok" | "low"; fixes: string[] };
+  imageInfo?: { width: number; height: number; level: "good" | "ok" | "low"; fixes: string[]; crop?: { zoom: number; x: number; y: number; rotate: number } };
 }
 
 export interface CartItem {
